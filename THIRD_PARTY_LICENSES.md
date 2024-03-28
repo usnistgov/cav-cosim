@@ -9,5 +9,5 @@ This project incorporates software from third-party projects, which are distribu
 <!-- References -->
 
 [carla]: https://github.com/carla-simulator/carla/blob/master/LICENSE
-[ros2]: https://github.com/ros2/ros2_documentation/blob/rolling/LICENSE
+[ros2]: https://github.com/ros2/rclpy/blob/humble/LICENSE
 [ns3]: https://github.com/nsnam/ns-3-dev-git/blob/master/LICENSE
