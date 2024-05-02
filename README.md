@@ -1,39 +1,47 @@
-# Automatic Braking Feature Demo
+# README
 
-This ROS package is a modified fork of the [carla-simulator/ros-bridge](https://github.com/carla-simulator/ros-bridge) package that is adapted to work with ROS2 Humble running on Ubuntu 22.04 LTS with Scenario Runner v0.9.15. The ROS bridge enables two-way communication between ROS and CARLA. The information from the CARLA server is translated into ROS topics. Similarly, the messages sent between nodes in ROS get translated into commands to be applied in CARLA.
+1. Software or Data description
+   - Statements of purpose and maturity
+   - Description of the repository contents
+   - Technical installation instructions, including operating
+     system or software dependencies
+1. Contact information
+   - PI name, NIST OU, Division, and Group names
+   - Contact email address at NIST
+   - Details of mailing lists, chatrooms, and discussion forums,
+     where applicable
+1. Related Material
+   - URL for associated project on the NIST website or other Department
+     of Commerce page, if available
+   - References to user guides if stored outside of GitHub
+1. Directions on appropriate citation with example text
+1. References to any included non-public domain software modules,
+   and additional license language if needed, *e.g.* [BSD][li-bsd],
+   [GPL][li-gpl], or [MIT][li-mit]
 
-You are currently in the `AutoBrakeFeature` branch of this repository. This branch is further restricted and refined as a demonstration of the Automatic Braking Feature. Specifically, our interest is in analyzing the behavioral competency of the aforementioned feature in an automated vehicle under network-bound perturbations.
+The more detailed your README, the more likely our colleagues
+around the world are to find it through a Web search. For general
+advice on writing a helpful README, please review
+[*Making Readmes Readable*][18f-guide] from 18F and Cornell's
+[*Guide to Writing README-style Metadata*][cornell-meta].
 
-## Main Requirements
+<!-- References -->
 
-- OS: Ubuntu 22.04 LTS
-- CARLA Version: 0.9.15
-- Scenario Runner Version: 0.9.15
-- ROS Version: Humble
-- **NOTE**: All testing was performed using Python 3.10. The default CARLA PythonAPI only supports Python 2.7 and 3.7 (and 3.8 by extension). Updated `.whl` and `.egg` files for Python 3.10 can be found at [https://github.com/gezp/carla_ros/releases/](https://github.com/gezp/carla_ros/releases/).
-
-### Screenshot of ABF Demo in Action 
-
-![rviz setup](./docs/images/abf_demo.png "ABF Demo")
-
-## Instructions (adapted from [ROS Bridge Documentation](https://carla.readthedocs.io/projects/ros-bridge/en/latest/ros_installation_ros2/))
-1. Set up a project directory and clone the ROS bridge repository and submodules:
-```markdown
-mkdir -p ~/Workspace/ros-bridge && cd ~/Workspace/ros-bridge
-git clone -b AutoBrakeFeature --recurse-submodules https://github.com/ttgamage/carla-ros-bridge.git
-mv carla-ros-bridge src
-```
-2. Set up ROS environment and install dependencies:
-```
-source /opt/ros/humble/setup.{zsh|bash}
-rosdep update
-rosdep install --from-paths src --ignore-src -r
-```
-3. Build the ROS bridge workspace using colcon:
-```
-colcon build --symlink-install
-```
-
-4. Follow instructions found in [CARLA Automatic brakeing Feature Demo](./docs/carla_abf_demo.md) to run the demo
-
-
+[18f-guide]: https://github.com/18F/open-source-guide/blob/18f-pages/pages/making-readmes-readable.md
+[cornell-meta]: https://data.research.cornell.edu/content/readme
+[gh-cdo]: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+[gh-mdn]: https://github.github.com/gfm/
+[gh-nst]: https://github.com/usnistgov
+[gh-odi]: https://odiwiki.nist.gov/ODI/GitHub.html
+[gh-osr]: https://github.com/usnistgov/opensource-repo/
+[gh-ost]: https://github.com/orgs/usnistgov/teams/opensource-team
+[gh-rob]: https://odiwiki.nist.gov/pub/ODI/GitHub/GHROB.pdf
+[gh-tpl]: https://github.com/usnistgov/carpentries-development/discussions/3
+[li-bsd]: https://opensource.org/licenses/bsd-license
+[li-gpl]: https://opensource.org/licenses/gpl-license
+[li-mit]: https://opensource.org/licenses/mit-license
+[nist-code]: https://code.nist.gov
+[nist-disclaimer]: https://www.nist.gov/open/license
+[nist-s-1801-02]: https://inet.nist.gov/adlp/directives/review-data-intended-publication
+[nist-open]: https://www.nist.gov/open/license#software
+[wk-rdm]: https://en.wikipedia.org/wiki/README
