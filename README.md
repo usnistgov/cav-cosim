@@ -1,7 +1,7 @@
 # Automatic Emergency Braking Feature Demo
 ![rviz setup](./docs/images/abf_demo.png "ABF Demo")
 
-## 1. Software or Data Description
+## 1. Software and Data Description
 
 - **Purpose and Maturity:**
   - This ROS package demonstrates an Automatic Emergency Braking Feature (AEB) as an adaptation of the [carla-simulator/ros-bridge](https://github.com/carla-simulator/ros-bridge) package.
@@ -20,7 +20,7 @@
   - **Python Version:** Testing was done using Python 3.10.
   - **Additional** `.whl` and `.egg` files for Python 3.10 can be found [here](https://github.com/gezp/carla_ros/releases/).
 
-### 2. Before You Begin
+## 2. Before You Begin
 - **CARLA:**
   - Install CARLA 0.9.15 (or later). Follow the [quick start installation](https://carla.readthedocs.io/en/latest/start_quickstart/) or build for [Linux](https://carla.readthedocs.io/en/latest/build_linux/).
   - Carla Client API for Python 3.10 is found [here](https://github.com/gezp/carla_ros/releases/).
@@ -46,7 +46,7 @@
     source /opt/ros/humble/setup.{zsh|bash}
     ```
 
-### 3. Configuration
+## 3. Configuration
 1. **Set up a project directory and clone the carla-ros-bridge repository:**
     ```sh
     mkdir -p ~/Workspace/carla-ros-bridge && cd ~/Workspace/carla-ros-bridge
@@ -82,7 +82,7 @@
       ./ns3 build
       ```
 
-### 4. How to Run the Demo
+## 4. How to Run the Demo
 You will require 3 Linux Terminals to run this demo:
 
 1. **Terminal 01: Start CARLA Server**
@@ -107,7 +107,7 @@ You will require 3 Linux Terminals to run this demo:
     ros2 topic pub --once /carla/hero/target_speed std_msgs/msg/Float64 "{data: 21.0}"
     ```
 
-## 2. Contact Information
+## 5. Contact Information
 
 - **Principal Investigator:** 
   - Name: Thomas Roth
@@ -115,16 +115,16 @@ You will require 3 Linux Terminals to run this demo:
   - Division and Group Names: Communication Technology Laboratory/Smart Connected Systems Division/IoT Devices and Infrastructures Group
   - Email: thomas.roth@nist.gov
 
-## 3. Related Material
+## 6. Related Material
 
 - **User Guides:** [Your Guide Links Here]
 
-## 4. Appropriate Citation
+## 7. Appropriate Citation
 
 Please cite the project as follows:
 > "Automatic Emergency Braking Feature Demo," National Institute of Standards and Technology, 2024. GitHub repository: https://github.com/usnistgov/cav-cosim.git
 
-## 5. References to Included Non-Public Domain Software Modules
+## 8. References to Included Non-Public Domain Software Modules
 
 This project may contain or depend on non-public domain software. Refer to the specific licensing language:
 - [BSD License][li-bsd]
