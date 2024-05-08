@@ -18,7 +18,7 @@
     - **Scenario Runner Version:** 0.9.15
     - **ROS Version:** ROS2 Humble
   - **Python Version:** Testing was done using Python 3.10.
-  - **Additional** `.whl` and `.egg` files for Python 3.10 can be found [here](https://github.com/gezp/carla_ros/releases/).
+  - **Additional:** `.whl` and `.egg` files for Python 3.10 can be found [here](https://github.com/gezp/carla_ros/releases/).
 
 ## 2. Before You Begin
 - **CARLA:**
@@ -117,7 +117,30 @@ You will require 3 Linux Terminals to run this demo:
 
 ## 6. Related Material
 
-- **User Guides:** [Your Guide Links Here]
+- **carla-simulator/ros-bridge:**  
+  - [GitHub Repository](https://github.com/carla-simulator/ros-bridge)
+
+- **carla-0.9.15-ubuntu-22.04:**  
+  - [Releases Page](https://github.com/gezp/carla_ros/releases/)
+
+- **CARLA Quick Start Guide:**  
+  - [Quick Start Installation Guide](https://carla.readthedocs.io/en/latest/start_quickstart/)
+
+- **Scenario Runner Version 0.9.15:**  
+  - [Release Page](https://github.com/carla-simulator/scenario_runner/releases/tag/v0.9.15)
+
+- **Getting Scenario Runner:**  
+  - [Documentation Guide](https://carla-scenariorunner.readthedocs.io/en/latest/getting_scenariorunner/)
+
+- **ROS2 Humble Installation:**  
+  - [Installation Guide](https://docs.ros.org/en/humble/Installation.html)
+
+- **rviz2:**  
+  - [rviz2](https://github.com/ros2/rviz)
+
+- **NS3:**
+  - [Feature/ROS2 Branch](https://github.com/tpr1/UCEFwithNS3/tree/feature/ROS2)
+
 
 ## 7. Appropriate Citation
 
