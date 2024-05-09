@@ -4,12 +4,12 @@
 ## 1. Software and Data Description
 
 - **Purpose and Maturity:**
-  - This ROS package demonstrates an Automatic Emergency Braking Feature (AEB) as an adaptation of the [carla-simulator/ros-bridge](https://github.com/carla-simulator/ros-bridge) package.
-  - It aims to analyze the behavioral competency of the AEB feature in an automated vehicle under network-bound perturbations.
+  - This ROS package demonstrates an Automatic Emergency Braking (AEB) Feature as an adaptation of the [carla-simulator/ros-bridge](https://github.com/carla-simulator/ros-bridge) package.
+  - It aims to analyze the behavioral competency of the AEB feature in an automated vehicle.
   - The package is designed to work with ROS2 Humble on Ubuntu 22.04 LTS and is restricted for demonstration purposes.
 
 - **Repository Contents:**
-  - Contains core ROS2 nodes, configuration files, and scripts needed to evaluate the Automatic Emergency Braking Feature.
+  - Contains core ROS2 nodes, configuration files, and scripts needed to evaluate the AEB Feature.
 
 - **Software and Dependencies:**
   - **Operating System:** Ubuntu 22.04 LTS
@@ -66,9 +66,8 @@
 4. **Set up NS-3:**
     - Clone the feature/ROS2 branch of the UCEFwithNS3 repository:
       ```sh
-      cd ~/Workspace
-      git clone -b feature/ROS2 https://github.com/tpr1/UCEFwithNS3/tree/feature/ROS2
-      mv feature/ROS2 ns3
+      mkdir -p ~/Workspace/ns3 && cd ~/Workspace/ns3
+      git clone -b feature/ROS2 --recurse-submodules https://github.com/tpr1/UCEFwithNS3.git
       ```
     - Install the ns-3 requirements:
       ```sh
