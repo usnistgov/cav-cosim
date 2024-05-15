@@ -110,7 +110,6 @@ You will require 3 Linux Terminals to run this demo:
 
 - **Principal Investigator:** 
   - Name: Thomas Roth
-  - NIST OU: National Institute of Standards and Technology
   - Division and Group Names: Communication Technology Laboratory/Smart Connected Systems Division/IoT Devices and Infrastructures Group
   - Email: thomas.roth@nist.gov
 
@@ -146,9 +145,3 @@ You will require 3 Linux Terminals to run this demo:
 Please cite the project as follows:
 > "Automatic Emergency Braking Feature Demo," National Institute of Standards and Technology, 2024. GitHub repository: https://github.com/usnistgov/cav-cosim.git
 
-## 8. References to Included Non-Public Domain Software Modules
-
-This project may contain or depend on non-public domain software. Refer to the specific licensing language:
-- [BSD License][li-bsd]
-- [GPL License][li-gpl]
-- [MIT License][li-mit]
