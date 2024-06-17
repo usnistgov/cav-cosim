@@ -11,13 +11,6 @@ import socket
 
 from queue import Queue
 
-# TODO: stop ns-3 on exit
-# TODO: handle objects added to or removed from /carla/objects
-# TODO: create services to add and remove tracked_roles at runtime
-#   self.declare_parameter('role_names', [''])
-#   [role_names] add_roles([roles_to_add])
-#   [role_names] remove_roles([roles_to_remove])
-
 class NetworkSimulatorBridge(Node):
     def __init__(self):
         super().__init__('network_simulator_bridge')
@@ -64,9 +57,13 @@ class NetworkSimulatorBridge(Node):
 
         self.response_queue = Queue()
         self.last_received_bsm = 0
+        self.bsm_received_time = 0
 
         self.received_clock = False
         self.received_objects = False
+
+        self.lead_car_speed = 0
+        self.ego_state = 'FOLLOWING'  # Possible states: FOLLOWING, STOPPED
 
     def callback_parameter(self, params):
         success = False
@@ -106,7 +103,7 @@ class NetworkSimulatorBridge(Node):
 
         self.get_world_state()
 
-        # for now, require all tracked roles to be defined exactly once in CARLA
+        # For now, require all tracked roles to be defined exactly once in CARLA
         if sorted(list(self.vehicle_id_to_role.values())) != sorted(self.tracked_roles):
             self.get_logger().warn("the CARLA world does not contain the expected vehicle roles: {}".format(self.tracked_roles))
             return
@@ -125,11 +122,14 @@ class NetworkSimulatorBridge(Node):
                     obj.pose.position.z,
                     obj.accel.linear.x,
                     obj.accel.linear.y,
-                    obj.accel.linear.z
+                    obj.accel.linear.z,
+                    obj.twist.linear.x  # Adding the speed of the object
                 ]
                 data_string = ','.join(str(d) for d in data)
                 packet_string += '\n' + role + ',' + data_string
                 num_objects += 1
+                if role == 'LeadCar':
+                    self.lead_car_speed = obj.twist.linear.x
         packet_string += '\r\n'
         self.get_logger().debug("constructed packet: {}".format(repr(packet_string)))
 
@@ -151,6 +151,14 @@ class NetworkSimulatorBridge(Node):
             self.get_logger().info("sending target_speed = 0 because of BSM received at {}".format(timestamp))
             self.set_target_speed(0)
             self.last_received_bsm = timestamp
+            self.bsm_received_time = clock_ms
+            self.ego_state = 'STOPPED'
+        else:
+            # Check if the lead car has started moving again and update the ego vehicle speed
+            if self.ego_state == 'STOPPED' and self.lead_car_speed > 0 and (clock_ms - self.bsm_received_time) > 1000:  # 1-second debounce
+                self.get_logger().info("Lead car is moving again, setting target speed to follow")
+                self.set_target_speed(20)
+                self.ego_state = 'FOLLOWING'
 
         self.received_clock = False
         self.received_objects = False

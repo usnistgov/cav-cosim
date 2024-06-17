@@ -4,10 +4,11 @@ import carla
 from nav_msgs.msg import Odometry
 from carla_msgs.msg import CarlaActorList, CarlaActorInfo
 from derived_object_msgs.msg import ObjectArray
+from cmath import sqrt
 
 class CarlaVehicleDataPublisher(Node):
     def __init__(self):
-        super().__init__('carla_vehicle_data_publisher')
+        super().__init__('carla_leadVehicle_data_publisher')
         self.vehicle_roles = {}
 
         # Initialize CARLA client
@@ -45,9 +46,14 @@ class CarlaVehicleDataPublisher(Node):
                 x = object.pose.position.x
                 y = object.pose.position.y
                 z = object.pose.position.z
+                accel_x = object.accel.linear.x
                 accel_y = object.accel.linear.y
+                accel_z = object.accel.linear.z
+                accel = sqrt(accel_x*2 + accel_y*2 + accel_z*2)
                 vehicle_data = f'[{role_name}] [x={x}, y={y}, z={z}, accel_y={accel_y}]'
-                self.get_logger().info(vehicle_data)
+                Vehicle_acceleration = f'[{role_name}] [accel_x={accel_x}, accel_y={accel_y}, accel_z={accel_z}, accel={accel}]'
+                if role_name == 'LeadCar':
+                    self.get_logger().info(Vehicle_acceleration)
 
 def main(args=None):
     rclpy.init(args=args)
