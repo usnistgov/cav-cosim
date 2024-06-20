@@ -7,7 +7,7 @@ from ament_index_python.packages import get_package_share_directory
 # Get the value of the SCENARIO_RUNNER_ROOT environment variable
 scenario_runner_root = os.getenv('SCENARIO_RUNNER_ROOT')
 
-# Default Goal Pose for the Ego Vehicle (Town04). Stored as Dictionary
+# Goal Pose for the Ego Vehicle (Town04) for scenarios: Highway Reveal, Rear End Collision and Highway MultiStop. Stored as Dictionary
 default_goal_pose = {
     'px': float('391.57'),
     'py': float('180.49'),
@@ -17,11 +17,11 @@ default_goal_pose = {
     'oz': float('0.0'),
     'ow': float('1.0'),
 }
-
+# Goal Pose for the Ego Vehicle (Town04) for scenarios: Left Turn, Right Turn. Stored as Dictionary
 '''default_goal_pose = {
-    'px': float('236.55'),
-    'py': float('374.6'),
-    'pz': float('0.0'),
+    'px': float('61.77'),
+    'py': float('194.31'),
+    'pz': float('0.03'),
     'ox': float('0.0'),
     'oy': float('0.0'),
     'oz': float('0.0'),
@@ -33,12 +33,15 @@ default_goal_pose = {
 hReveal_scenario_file = os.path.join(get_package_share_directory('carla_abf_demo'), 'config/HighwayReveal.xosc')
 hRearEnd_scenario_file = os.path.join(get_package_share_directory('carla_abf_demo'), 'config/HighwayRearEnd.xosc')
 HighwayMultiStop_scenario_file = os.path.join(get_package_share_directory('carla_abf_demo'), 'config/HighwayMultiStop.xosc')
+RightTurn_scenario_file = os.path.join(get_package_share_directory('carla_abf_demo'), 'config/RightTurn.xosc')
+
 ros_topic_msg_string = "{{ 'scenarios': \
     [\
          {{ 'name': 'Highway Reveal', 'scenario_file': '{}'}},\
          {{ 'name': 'Rear End Collision', 'scenario_file': '{}'}},\
-         {{ 'name': 'Highway MultiStop', 'scenario_file': '{}'}}\
-    ] }}".format(hReveal_scenario_file, hRearEnd_scenario_file, HighwayMultiStop_scenario_file)
+         {{ 'name': 'Highway MultiStop', 'scenario_file': '{}'}},\
+         {{ 'name': 'Right Turn', 'scenario_file': '{}'}}\
+    ] }}".format(hReveal_scenario_file, hRearEnd_scenario_file, HighwayMultiStop_scenario_file, RightTurn_scenario_file)
 
 def generate_launch_description():
     ld = launch.LaunchDescription([
