@@ -208,7 +208,7 @@
                                             <EntityCondition>
                                                 <ReachPositionCondition tolerance="3.0">
                                                     <Position>
-                                                        <WorldPosition x="16.91" y="169.45" z="0.14" />
+                                                        <WorldPosition x="61.37" y="173.19" z="0.20" />
                                                     </Position>
                                                 </ReachPositionCondition>
                                             </EntityCondition>

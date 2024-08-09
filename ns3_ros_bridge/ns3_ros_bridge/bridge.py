@@ -9,8 +9,6 @@ from std_msgs.msg import Float64
 import carla
 import socket
 
-from queue import Queue
-
 class NetworkSimulatorBridge(Node):
     def __init__(self):
         super().__init__('network_simulator_bridge')
@@ -39,7 +37,7 @@ class NetworkSimulatorBridge(Node):
 
         # Setup the TCP Server for ns-3
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # allow immediate re-use of address if code restarted
+        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # allow immediate re-use of address if code restarted
         self.server_socket.bind(('127.0.0.1', 1111))
         self.server_socket.listen(1)
         self.get_logger().info("TCP/IP server at 127.0.0.1:1111 waiting for client connection...")
@@ -55,7 +53,6 @@ class NetworkSimulatorBridge(Node):
         self.tracked_roles = ['hero', 'FollowCar', 'LeadCar']
         self.vehicle_id_to_role = {}
 
-        self.response_queue = Queue()
         self.last_received_bsm = 0
         self.bsm_received_time = 0
 
@@ -99,11 +96,11 @@ class NetworkSimulatorBridge(Node):
 
     def update(self):
         if not self.received_clock or not self.received_objects:
-            return # require both subscriptions to proceed
+            return  # require both subscriptions to proceed
 
         self.get_world_state()
 
-        # For now, require all tracked roles to be defined exactly once in CARLA
+        # Require all tracked roles to be defined exactly once in CARLA
         if sorted(list(self.vehicle_id_to_role.values())) != sorted(self.tracked_roles):
             self.get_logger().warn("the CARLA world does not contain the expected vehicle roles: {}".format(self.tracked_roles))
             return
@@ -123,42 +120,43 @@ class NetworkSimulatorBridge(Node):
                     obj.accel.linear.x,
                     obj.accel.linear.y,
                     obj.accel.linear.z,
-                    obj.twist.linear.x  # Adding the speed of the object
+                    obj.twist.linear.x,  # Adding the speed of the object
+                    obj.twist.linear.y,
+                    obj.twist.linear.z
                 ]
                 data_string = ','.join(str(d) for d in data)
                 packet_string += '\n' + role + ',' + data_string
                 num_objects += 1
                 if role == 'LeadCar':
-                    self.lead_car_speed = obj.twist.linear.x
+                    self.lead_car_speed = (obj.twist.linear.x**2 + obj.twist.linear.y**2 + obj.twist.linear.z**2)**0.5
         packet_string += '\r\n'
         self.get_logger().debug("constructed packet: {}".format(repr(packet_string)))
 
-        if num_objects != len(self.tracked_roles): # will happen one tick during initialization
+        if num_objects != len(self.tracked_roles):  # will happen one tick during initialization
             self.get_logger().warn("skipped update: received {} out of {} vehicle objects".format(str(num_objects), str(len(self.tracked_roles))))
             return
 
+        # Send data to ns-3 and receive the response
         self.client_socket.send(packet_string.encode())
         response = self.client_socket.recv(4096).decode()
         self.get_logger().debug("received response: {}".format(response))
 
-        hero_bsm_timestamp = float(response.split(',')[0]) # format: ts_hero,ts_FollowCar,ts_LeadCar
-        self.response_queue.put([clock_ms + self.delay_ms, hero_bsm_timestamp]) # TODO: if delay_ms changes this is no longer sorted
+        # Extract the BSM timestamp for the hero vehicle (first value in the response)
+        hero_bsm_timestamp = float(response.split(',')[0])  # assuming the format: "ts_hero,ts_FollowCar,ts_LeadCar"
 
-        timestamp = 0 # default value
-        while not self.response_queue.empty() and self.response_queue.queue[0][0] <= clock_ms:
-            timestamp = self.response_queue.get()[1]
-        if timestamp > self.last_received_bsm: # we've received a new BSM
-            self.get_logger().info("sending target_speed = 0 because of BSM received at {}".format(timestamp))
+        # Update the state if a new BSM is received
+        if hero_bsm_timestamp > self.last_received_bsm:
+            self.get_logger().info("Received new BSM with timestamp {}".format(hero_bsm_timestamp))
             self.set_target_speed(0)
-            self.last_received_bsm = timestamp
+            self.last_received_bsm = hero_bsm_timestamp
             self.bsm_received_time = clock_ms
             self.ego_state = 'STOPPED'
-        else:
-            # Check if the lead car has started moving again and update the ego vehicle speed
-            if self.ego_state == 'STOPPED' and self.lead_car_speed > 0 and (clock_ms - self.bsm_received_time) > 1000:  # 1-second debounce
-                self.get_logger().info("Lead car is moving again, setting target speed to follow")
-                self.set_target_speed(20)
-                self.ego_state = 'FOLLOWING'
+
+        # Check if the lead car has started moving again and update the ego vehicle speed
+        if self.ego_state == 'STOPPED' and self.lead_car_speed > 1.0 and (clock_ms - self.bsm_received_time) > 1000:
+            self.get_logger().info("Lead car is moving again, setting target speed to follow")
+            self.set_target_speed(20)
+            self.ego_state = 'FOLLOWING'
 
         self.received_clock = False
         self.received_objects = False
@@ -168,15 +166,15 @@ class NetworkSimulatorBridge(Node):
 
         self.vehicle_id_to_role.clear()
         for vehicle in carla_world.get_actors().filter('vehicle.*'):
-            role_name = vehicle.attributes.get('role_name') # can return None
+            role_name = vehicle.attributes.get('role_name')  # can return None
             if role_name in self.tracked_roles:
                 self.vehicle_id_to_role[vehicle.id] = role_name
-    
+
     def set_target_speed(self, speed):
         message = Float64()
         message.data = float(speed)
         self.publish_target_speed.publish(message)
-        self.get_logger().debug("published target_speed: {}".format(message.data))
+        self.get_logger().debug("Published target_speed: {}".format(message.data))
 
 def main(args=None):
     rclpy.init(args=args)

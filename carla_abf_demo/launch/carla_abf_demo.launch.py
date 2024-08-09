@@ -34,14 +34,16 @@ hReveal_scenario_file = os.path.join(get_package_share_directory('carla_abf_demo
 hRearEnd_scenario_file = os.path.join(get_package_share_directory('carla_abf_demo'), 'config/HighwayRearEnd.xosc')
 HighwayMultiStop_scenario_file = os.path.join(get_package_share_directory('carla_abf_demo'), 'config/HighwayMultiStop.xosc')
 RightTurn_scenario_file = os.path.join(get_package_share_directory('carla_abf_demo'), 'config/RightTurn.xosc')
+LeftTurn_scenario_file = os.path.join(get_package_share_directory('carla_abf_demo'), 'config/LeftTurn.xosc')
 
 ros_topic_msg_string = "{{ 'scenarios': \
     [\
          {{ 'name': 'Highway Reveal', 'scenario_file': '{}'}},\
          {{ 'name': 'Rear End Collision', 'scenario_file': '{}'}},\
          {{ 'name': 'Highway MultiStop', 'scenario_file': '{}'}},\
-         {{ 'name': 'Right Turn', 'scenario_file': '{}'}}\
-    ] }}".format(hReveal_scenario_file, hRearEnd_scenario_file, HighwayMultiStop_scenario_file, RightTurn_scenario_file)
+         {{ 'name': 'Right Turn', 'scenario_file': '{}'}},\
+         {{ 'name': 'Left Turn', 'scenario_file': '{}'}}\
+    ] }}".format(hReveal_scenario_file, hRearEnd_scenario_file, HighwayMultiStop_scenario_file, RightTurn_scenario_file, LeftTurn_scenario_file)
 
 def generate_launch_description():
     ld = launch.LaunchDescription([
@@ -223,7 +225,6 @@ def generate_launch_description():
                  "carla_ros_scenario_runner_types/srv/ExecuteScenario",
                  "{{scenario: {{scenario_file: '{}'}}}}".format(hReveal_scenario_file)],
             name='service_call_execute_scenario',
-            output='screen',  # This line prints the output to the terminal
         ),
 
         # Launch RVIZ 2 Interface

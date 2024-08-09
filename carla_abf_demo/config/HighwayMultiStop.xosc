@@ -81,40 +81,7 @@
                 </Properties>
             </Vehicle>
         </ScenarioObject>
-        <ScenarioObject name="AuxMidCar">
-            <Vehicle name="vehicle.mitsubishi.fusorosa" vehicleCategory="bus">
-                <ParameterDeclarations/>
-                <Performance maxAcceleration="15" maxDeceleration="15" maxSpeed="50.0"/>
-                <BoundingBox>
-                    <Center x="-0.00706172" y="5.96046e-08" z="0.727468"/>
-                    <Dimensions height="1.45382" length="4.55561" width="1.93778"/>
-                </BoundingBox>
-                <Axles>
-                    <FrontAxle maxSteering="0.698132" positionX="1.38385" positionZ="0.34415" trackWidth="1.13434" wheelDiameter="0.688299"/>
-                    <RearAxle maxSteering="0" positionX="-1.32946" positionZ="0.34415" trackWidth="1.13434" wheelDiameter="0.688299"/>
-                </Axles>
-                <Properties>
-                    <Property name="color" value="255,216,0"/>
-                </Properties>
-            </Vehicle>
-        </ScenarioObject>
-        <ScenarioObject name="AuxTailCar">
-            <Vehicle name="vehicle.carlamotors.european_hgv" vehicleCategory="truck">
-                <ParameterDeclarations/>
-                <Performance maxAcceleration="15" maxDeceleration="15" maxSpeed="50.0"/>
-                <BoundingBox>
-                    <Center x="-0.00706172" y="5.96046e-08" z="0.727468"/>
-                    <Dimensions height="1.45382" length="4.55561" width="1.93778"/>
-                </BoundingBox>
-                <Axles>
-                    <FrontAxle maxSteering="0.698132" positionX="1.38385" positionZ="0.34415" trackWidth="1.13434" wheelDiameter="0.688299"/>
-                    <RearAxle maxSteering="0" positionX="-1.32946" positionZ="0.34415" trackWidth="1.13434" wheelDiameter="0.688299"/>
-                </Axles>
-                <Properties>
-                    <!--Property name="color" value="51,113,255"/-->
-                </Properties>
-            </Vehicle>
-        </ScenarioObject>
+        
     </Entities>
     <Storyboard>
         <Init>
@@ -182,24 +149,6 @@
                         </TeleportAction>
                     </PrivateAction>
                 </Private>
-                <Private entityRef="AuxTailCar">
-                    <PrivateAction>
-                        <TeleportAction>
-                            <Position>
-                                <LanePosition roadId="50" laneId="-2" offset="0.0" s="100.0"/>
-                            </Position>
-                        </TeleportAction>
-                    </PrivateAction>
-                </Private>
-                <Private entityRef="AuxMidCar">
-                    <PrivateAction>
-                        <TeleportAction>
-                            <Position>
-                                <LanePosition roadId="50" laneId="-2" offset="0.0" s="130.0"/>
-                            </Position>
-                        </TeleportAction>
-                    </PrivateAction>
-                </Private>
                 <Private entityRef="ParallelCar">
                     <PrivateAction>
                         <TeleportAction>
@@ -255,8 +204,6 @@
                 <ManeuverGroup name="Mid_Group" maximumExecutionCount="1"> 
                     <Actors selectTriggeringEntities="false">
                         <EntityRef entityRef="ParallelCar"/>
-                        <EntityRef entityRef="AuxMidCar"/>
-                        <EntityRef entityRef="AuxTailCar"/>
                     </Actors>
 
                     <Maneuver name="Mid_Group_Maneuver">
@@ -323,13 +270,17 @@
                             </Action>
                             <StartTrigger>
                                 <ConditionGroup>
-                                    <Condition name="LeadCarReachedFastSpeed1" conditionEdge="rising" delay="0.0"> 
+                                    <Condition name="LeadCarReachedPosition1" conditionEdge="rising" delay="0.0"> 
                                         <ByEntityCondition>
                                             <TriggeringEntities triggeringEntitiesRule="any">
                                                 <EntityRef entityRef="LeadCar"/>
                                             </TriggeringEntities>
-                                            <EntityCondition> 
-                                                <SpeedCondition value="$MidLaneSpeed" rule="greaterThan"/> 
+                                            <EntityCondition>
+                                                <ReachPositionCondition tolerance="3.0">
+                                                    <Position>
+                                                        <WorldPosition x="184.04" y="374.39" z="0.0" />
+                                                    </Position>
+                                                </ReachPositionCondition>
                                             </EntityCondition>
                                         </ByEntityCondition>
                                     </Condition>
@@ -363,13 +314,13 @@
                             </Action>
                             <StartTrigger>
                                 <ConditionGroup>
-                                    <Condition name="LeadCarStopped1" conditionEdge="rising" delay="3.0"> 
+                                    <Condition name="LeadCarStopped1" conditionEdge="rising" delay="10.0"> 
                                         <ByEntityCondition>
                                             <TriggeringEntities triggeringEntitiesRule="any">
                                                 <EntityRef entityRef="LeadCar"/>
                                             </TriggeringEntities>
                                             <EntityCondition>
-                                                <SpeedCondition value="0.01" rule="lessThan"/> 
+                                                <SpeedCondition value="0.0" rule="equalTo"/> 
                                             </EntityCondition>
                                         </ByEntityCondition>
                                     </Condition>
@@ -403,14 +354,18 @@
                             </Action>
                             <StartTrigger>
                                 <ConditionGroup>
-                                    <Condition name="LeadCarRestarted1" conditionEdge="rising" delay="5.0"> 
+                                    <Condition name="LeadCarReachedPosition2" conditionEdge="rising" delay="0.0"> 
                                         <ByEntityCondition>
                                             <TriggeringEntities triggeringEntitiesRule="any">
                                                 <EntityRef entityRef="LeadCar"/>
                                             </TriggeringEntities>
-                                            <EntityCondition> 
-                                                <SpeedCondition value="$FastLaneSpeed" rule="greaterThan"/> 
-                                            </EntityCondition>
+                                        <EntityCondition>
+                                            <ReachPositionCondition tolerance="3.0">
+                                                <Position>
+                                                    <WorldPosition x="340.90" y="342.22" z="0.0" />
+                                                </Position>
+                                            </ReachPositionCondition>
+                                        </EntityCondition>
                                         </ByEntityCondition>
                                     </Condition>
                                 </ConditionGroup>
@@ -443,7 +398,7 @@
                             </Action>
                             <StartTrigger>
                                 <ConditionGroup>
-                                    <Condition name="LeadCarStopped2" conditionEdge="rising" delay="3.0"> 
+                                    <Condition name="LeadCarStopped2" conditionEdge="rising" delay="30.0"> 
                                         <ByEntityCondition>
                                             <TriggeringEntities triggeringEntitiesRule="any">
                                                 <EntityRef entityRef="LeadCar"/>
@@ -483,13 +438,17 @@
                             </Action>
                             <StartTrigger>
                                 <ConditionGroup>
-                                    <Condition name="LeadCarRestarted2" conditionEdge="rising" delay="15.0"> 
+                                    <Condition name="LeadCarReachedPosition3" conditionEdge="rising" delay="0.0"> 
                                         <ByEntityCondition>
                                             <TriggeringEntities triggeringEntitiesRule="any">
                                                 <EntityRef entityRef="LeadCar"/>
                                             </TriggeringEntities>
-                                            <EntityCondition> 
-                                                <SpeedCondition value="$MidLaneSpeed" rule="greaterThan"/> 
+                                            <EntityCondition>
+                                                <ReachPositionCondition tolerance="3.0">
+                                                    <Position>
+                                                        <WorldPosition x="391.98" y="209.37" z="0.0" />
+                                                    </Position>
+                                                </ReachPositionCondition>
                                             </EntityCondition>
                                         </ByEntityCondition>
                                     </Condition>

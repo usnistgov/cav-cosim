@@ -51,7 +51,7 @@
     ```sh
     mkdir -p ~/Workspace/carla-ros-bridge && cd ~/Workspace/carla-ros-bridge
     git clone --recurse-submodules https://github.com/usnistgov/cav-cosim.git
-    mv carla-ros-bridge src
+    mv cav-cosim src
     ``` 
 2. **Set up ROS environment and install dependencies:**
     ```sh
