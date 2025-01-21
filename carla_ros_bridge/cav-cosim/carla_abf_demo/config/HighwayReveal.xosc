@@ -1,0 +1,411 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OpenSCENARIO>
+    <FileHeader revMajor="1" revMinor="0" date="2024-03-21T22:15:00" description="NIST::RevealScenario" author="Thoshitha Gamage"/>
+    <ParameterDeclarations>
+        <ParameterDeclaration name="FastLaneSpeed" parameterType="double" value="19.44" /> <!-- 19.44 m/s = 70mph -->
+        <ParameterDeclaration name="MidLaneSpeed" parameterType="double" value="16.667" /> <!-- 18.055 m/s = 65mph -->
+    </ParameterDeclarations>
+    <CatalogLocations/>
+    <RoadNetwork>
+        <LogicFile filepath="Town04"/>
+        <SceneGraphFile filepath=""/>
+    </RoadNetwork>
+    <Entities>
+        <ScenarioObject name="hero">
+            <!--NOTE: Hero is spawned by carla_spawn_objects.-->
+            <Vehicle name="vehicle.tesla.model3" vehicleCategory="car">
+                <ParameterDeclarations/>
+                <Performance maxAcceleration="15" maxDeceleration="15" maxSpeed="50.0"/>
+                <BoundingBox>
+                    <Center x="1.5" y="0.0" z="0.9"/>
+                    <Dimensions width="2.1" length="4.5" height="1.8"/>
+                </BoundingBox>
+                <Axles>
+                    <FrontAxle maxSteering="0.5" wheelDiameter="0.6" trackWidth="1.8" positionX="3.1" positionZ="0.3"/>
+                    <RearAxle maxSteering="0.0" wheelDiameter="0.6" trackWidth="1.8" positionX="0.0" positionZ="0.3"/>
+                </Axles>
+                <Properties>
+                    <Property name="type" value="ego_vehicle"/>
+                    <!--Property name="color" value="0,0,0"/-->
+                </Properties>
+            </Vehicle>
+        </ScenarioObject>
+        <ScenarioObject name="LeadCar">
+            <Vehicle name="vehicle.lincoln.mkz_2020" vehicleCategory="car"> 
+                <ParameterDeclarations/>
+                <Performance maxAcceleration="15" maxDeceleration="15" maxSpeed="50.0"/>
+                <BoundingBox>
+                    <Center x="-0.00706172" y="5.96046e-08" z="0.727468"/>
+                    <Dimensions height="1.45382" length="4.55561" width="1.93778"/>
+                </BoundingBox>
+                <Axles>
+                    <FrontAxle maxSteering="0.698132" positionX="1.38385" positionZ="0.34415" trackWidth="1.13434" wheelDiameter="0.688299"/>
+                    <RearAxle maxSteering="0" positionX="-1.32946" positionZ="0.34415" trackWidth="1.13434" wheelDiameter="0.688299"/>
+                </Axles>
+                <Properties>
+                    <Property name="color" value="154,134,110"/>
+                </Properties>
+            </Vehicle>
+        </ScenarioObject>
+        <ScenarioObject name="FollowCar">
+            <Vehicle name="vehicle.nissan.patrol_2021" vehicleCategory="car">
+                <ParameterDeclarations/>
+                <Performance maxAcceleration="15" maxDeceleration="15" maxSpeed="50.0"/>
+                <BoundingBox>
+                    <Center x="-0.00706172" y="5.96046e-08" z="0.727468"/>
+                    <Dimensions height="1.45382" length="4.55561" width="1.93778"/>
+                </BoundingBox>
+                <Axles>
+                    <FrontAxle maxSteering="0.698132" positionX="1.38385" positionZ="0.34415" trackWidth="1.13434" wheelDiameter="0.688299"/>
+                    <RearAxle maxSteering="0" positionX="-1.32946" positionZ="0.34415" trackWidth="1.13434" wheelDiameter="0.688299"/>
+                </Axles>
+                <Properties>
+                    <Property name="color" value="170,169,173"/> <!--Silver Metallic-->
+                </Properties>
+            </Vehicle>
+        </ScenarioObject>
+        <ScenarioObject name="ParallelCar">
+            <Vehicle name="vehicle.mini.cooper_s_2021" vehicleCategory="car">
+                <ParameterDeclarations/>
+                <Performance maxAcceleration="15" maxDeceleration="15" maxSpeed="50.0"/>
+                <BoundingBox>
+                    <Center x="-0.00706172" y="5.96046e-08" z="0.727468"/>
+                    <Dimensions height="1.45382" length="4.55561" width="1.93778"/>
+                </BoundingBox>
+                <Axles>
+                    <FrontAxle maxSteering="0.698132" positionX="1.38385" positionZ="0.34415" trackWidth="1.13434" wheelDiameter="0.688299"/>
+                    <RearAxle maxSteering="0" positionX="-1.32946" positionZ="0.34415" trackWidth="1.13434" wheelDiameter="0.688299"/>
+                </Axles>
+                <Properties>
+                    <Property name="color" value="0,66,37"/>
+                </Properties>
+            </Vehicle>
+        </ScenarioObject>
+        <ScenarioObject name="AuxMidCar">
+            <Vehicle name="vehicle.mitsubishi.fusorosa" vehicleCategory="bus">
+                <ParameterDeclarations/>
+                <Performance maxAcceleration="15" maxDeceleration="15" maxSpeed="50.0"/>
+                <BoundingBox>
+                    <Center x="-0.00706172" y="5.96046e-08" z="0.727468"/>
+                    <Dimensions height="1.45382" length="4.55561" width="1.93778"/>
+                </BoundingBox>
+                <Axles>
+                    <FrontAxle maxSteering="0.698132" positionX="1.38385" positionZ="0.34415" trackWidth="1.13434" wheelDiameter="0.688299"/>
+                    <RearAxle maxSteering="0" positionX="-1.32946" positionZ="0.34415" trackWidth="1.13434" wheelDiameter="0.688299"/>
+                </Axles>
+                <Properties>
+                    <Property name="color" value="255,216,0"/>
+                </Properties>
+            </Vehicle>
+        </ScenarioObject>
+        <ScenarioObject name="AuxTailCar">
+            <Vehicle name="vehicle.carlamotors.european_hgv" vehicleCategory="truck">
+                <ParameterDeclarations/>
+                <Performance maxAcceleration="15" maxDeceleration="15" maxSpeed="50.0"/>
+                <BoundingBox>
+                    <Center x="-0.00706172" y="5.96046e-08" z="0.727468"/>
+                    <Dimensions height="1.45382" length="4.55561" width="1.93778"/>
+                </BoundingBox>
+                <Axles>
+                    <FrontAxle maxSteering="0.698132" positionX="1.38385" positionZ="0.34415" trackWidth="1.13434" wheelDiameter="0.688299"/>
+                    <RearAxle maxSteering="0" positionX="-1.32946" positionZ="0.34415" trackWidth="1.13434" wheelDiameter="0.688299"/>
+                </Axles>
+                <Properties>
+                    <!--Property name="color" value="51,113,255"/-->
+                </Properties>
+            </Vehicle>
+        </ScenarioObject>
+    </Entities>
+    <Storyboard>
+        <Init>
+            <Actions>
+                <GlobalAction>
+                    <EnvironmentAction>
+                        <Environment name="Environment1">
+                            <TimeOfDay animation="false" dateTime="2024-01-02T23:43:00"/>
+                            <Weather cloudState="free">
+                                <Sun intensity="0.8" azimuth="60.0" elevation="0.2"/>
+                                <Fog visualRange="5000.0"/>
+                                <Precipitation precipitationType="dry" intensity="0.0"/>
+                            </Weather>
+                            <RoadCondition frictionScaleFactor="1.0"/>
+                        </Environment>
+                    </EnvironmentAction>
+                </GlobalAction>
+                <Private entityRef="hero">
+                    <PrivateAction>
+                        <TeleportAction>
+                            <Position>
+                                <!--WorldPosition x="119.16" y="369.91" z="0.0" h="0.27"/-->
+                                <LanePosition roadId="50" laneId="-1" offset="0.0" s="90.0"/>
+                            </Position>
+                        </TeleportAction>
+                    </PrivateAction>
+                    <PrivateAction>
+                        <ControllerAction>
+                            <AssignControllerAction>
+                                <Controller name="ego_vehicleController">
+                                <Properties>
+                                    <!--Property name="module" value="external_control"/-->
+                                    <Property name="module" value="carla_ros_scenario_runner.ros_vehicle_control" />
+                                    <Property name="launch" value="carla_ad_agent.launch"/>
+                                    <Property name="launch-package" value="carla_ad_agent"/>
+                                </Properties>
+                                </Controller>
+                            </AssignControllerAction>
+                            <OverrideControllerValueAction>
+                                <Throttle value="0" active="false"/>
+                                <Brake value="0" active="false"/>
+                                <Clutch value="0" active="false"/>
+                                <ParkingBrake value="0" active="false"/>
+                                <SteeringWheel value="0" active="false"/>
+                                <Gear number="0" active="false"/>
+                            </OverrideControllerValueAction>
+                        </ControllerAction>
+                    </PrivateAction>
+                </Private>
+                <Private entityRef="LeadCar">
+                    <PrivateAction>
+                        <TeleportAction>
+                            <Position>
+                                <LanePosition roadId="50" laneId="-1" offset="0.0" s="160.0"/>
+                            </Position>
+                        </TeleportAction>
+                    </PrivateAction>
+                </Private>
+                <Private entityRef="FollowCar">
+                    <PrivateAction>
+                        <TeleportAction>
+                            <Position>
+                                <LanePosition roadId="50" laneId="-1" offset="0.0" s="140.0"/> 
+                            </Position>
+                        </TeleportAction>
+                    </PrivateAction>
+                </Private>
+                <Private entityRef="AuxTailCar">
+                    <PrivateAction>
+                        <TeleportAction>
+                            <Position>
+                                <LanePosition roadId="50" laneId="-2" offset="0.0" s="100.0"/>
+                            </Position>
+                        </TeleportAction>
+                    </PrivateAction>
+                </Private>
+                <Private entityRef="AuxMidCar">
+                    <PrivateAction>
+                        <TeleportAction>
+                            <Position>
+                                <LanePosition roadId="50" laneId="-2" offset="0.0" s="130.0"/>
+                            </Position>
+                        </TeleportAction>
+                    </PrivateAction>
+                </Private>
+                <Private entityRef="ParallelCar">
+                    <PrivateAction>
+                        <TeleportAction>
+                            <Position>
+                                <LanePosition roadId="50" laneId="-2" offset="0.0" s="145.0"/>
+                            </Position>
+                        </TeleportAction>
+                    </PrivateAction>
+                </Private>
+            </Actions>
+        </Init>
+        <Story name="Reveal">
+
+             <Act name="Launch_Vehicles">
+                
+                <ManeuverGroup name="Fast_Group" maximumExecutionCount="1"> 
+                    <Actors selectTriggeringEntities="false">
+                        <EntityRef entityRef="LeadCar"/>
+                        <EntityRef entityRef="FollowCar"/>
+                    </Actors>
+
+                    <Maneuver name="Fast_Group_Maneuver">
+                        <Event name="Launch_Fast_Group" priority="parallel" maximumExecutionCount="1">
+                            <Action name="Set_Fast_Speed">
+                                <PrivateAction>
+                                    <LongitudinalAction>
+                                        <SpeedAction> 
+                                            <SpeedActionDynamics dynamicsShape="step" value="5" dynamicsDimension="time"/>
+                                            <SpeedActionTarget>
+                                                <AbsoluteTargetSpeed value="$FastLaneSpeed"/> </SpeedActionTarget> <!-- 19.44 m/s = 70mph -->
+                                        </SpeedAction>
+                                    </LongitudinalAction>
+                                </PrivateAction>
+                            </Action>
+                            <StartTrigger>
+                                <ConditionGroup>
+                                    <Condition name="Fast_Group_Trigger" conditionEdge="rising" delay="0">
+                                        <ByEntityCondition> 
+                                            <TriggeringEntities triggeringEntitiesRule="any"> <EntityRef entityRef="hero"/> </TriggeringEntities>
+                                        <EntityCondition>
+                                        <SpeedCondition value="0.01" rule="greaterThan"/> </EntityCondition>
+                                        </ByEntityCondition>
+                                    </Condition>
+                                </ConditionGroup>
+                            </StartTrigger>
+                        </Event>
+                    </Maneuver>
+                </ManeuverGroup>
+
+                <ManeuverGroup name="Mid_Group" maximumExecutionCount="1"> 
+                    <Actors selectTriggeringEntities="false">
+                        <EntityRef entityRef="ParallelCar"/>
+                        <EntityRef entityRef="AuxMidCar"/>
+                        <EntityRef entityRef="AuxTailCar"/>
+                    </Actors>
+
+                    <Maneuver name="Mid_Group_Maneuver">
+                        <Event name="Launch_Mid_Group" priority="parallel" maximumExecutionCount="1">
+                            <Action name="Set_Mid_Speed">
+                                <PrivateAction>
+                                    <LongitudinalAction>
+                                        <SpeedAction> 
+                                            <SpeedActionDynamics dynamicsShape="step" value="5" dynamicsDimension="time"/>
+                                            <SpeedActionTarget>
+                                                <AbsoluteTargetSpeed value="$MidLaneSpeed"/> </SpeedActionTarget> <!-- 16.667 m/s = 60mph -->
+                                        </SpeedAction>
+                                    </LongitudinalAction>
+                                </PrivateAction>
+                            </Action>
+                            <StartTrigger>
+                                <ConditionGroup>
+                                    <Condition name="Mid_Group_Trigger" conditionEdge="rising" delay="0">
+                                        <ByEntityCondition> 
+                                            <TriggeringEntities triggeringEntitiesRule="any"> <EntityRef entityRef="hero"/> </TriggeringEntities>
+                                        <EntityCondition>
+                                        <SpeedCondition value="0.01" rule="greaterThan"/> </EntityCondition>
+                                        </ByEntityCondition>
+                                    </Condition>
+                                </ConditionGroup>
+                            </StartTrigger>
+                        </Event>
+                    </Maneuver>
+                </ManeuverGroup>
+
+                <StartTrigger>
+                    <ConditionGroup>
+                        <Condition name="SimulationStart" conditionEdge="none" delay="0">
+                            <ByValueCondition>
+                                <SimulationTimeCondition value="0" rule="equalTo"/>
+                            </ByValueCondition>
+                        </Condition>
+                    </ConditionGroup>
+                </StartTrigger>
+            </Act>
+
+            <Act name="Abrupt_Stop">
+                <ManeuverGroup name="LeadCar_Stop" maximumExecutionCount="1">
+                    <Actors selectTriggeringEntities="false">
+                        <EntityRef entityRef="LeadCar"/>
+                    </Actors>
+                    <Maneuver name="LeadCar_AbruptStop"> 
+                        <Event name="LeadCar_AbruptStopEvent" priority="parallel" maximumExecutionCount="1">
+                                <Action name="LeadCar_StopAction">
+                                    <PrivateAction>
+                                        <LongitudinalAction>
+                                            <SpeedAction>
+                                                <SpeedActionDynamics dynamicsShape="step" value="0" dynamicsDimension="time"/>
+                                                <SpeedActionTarget> <AbsoluteTargetSpeed value="0.0"/> </SpeedActionTarget>
+                                            </SpeedAction>
+                                        </LongitudinalAction>
+                                    </PrivateAction>
+                                </Action>
+                                <StartTrigger>
+                                    <ConditionGroup>
+                                        <Condition name="LeadCarReachedFastSpeed" conditionEdge="rising" delay="1.0"> 
+                                            <ByEntityCondition>
+                                                <TriggeringEntities triggeringEntitiesRule="any">
+                                                    <EntityRef entityRef="LeadCar"/>
+                                                </TriggeringEntities>
+                                                <EntityCondition> 
+                                                    <SpeedCondition value="$MidLaneSpeed" rule="greaterThan"/> 
+                                                </EntityCondition>
+                                            </ByEntityCondition>
+                                        </Condition>
+                                    </ConditionGroup>
+                                </StartTrigger>
+                        </Event>
+                        <!--This is dummy action just to keep the LeadCar Alive-->
+                        <Event name="LeadCar_StayAlive" priority="overwrite">
+                            <Action name="LeadCar_StayAlive">
+                                <PrivateAction>
+                                <LongitudinalAction>
+                                    <SpeedAction>
+                                    <SpeedActionDynamics dynamicsShape="step" value="10" dynamicsDimension="time"/>
+                                    <SpeedActionTarget>
+                                        <AbsoluteTargetSpeed value="0.0"/>
+                                    </SpeedActionTarget>
+                                    </SpeedAction>
+                                </LongitudinalAction>
+                                </PrivateAction>
+                            </Action>
+                            <StartTrigger>
+                                <ConditionGroup>
+                                <Condition name="LeadCar_KeepVelocity" delay="0" conditionEdge="rising">
+                                    <ByValueCondition>
+                                    <StoryboardElementStateCondition storyboardElementType="action" storyboardElementRef="LeadCar_KeepVelocity" state="endTransition"/>
+                                    </ByValueCondition>
+                                </Condition>
+                                </ConditionGroup>
+                            </StartTrigger>
+                        </Event>
+                    </Maneuver>
+                </ManeuverGroup>
+
+                <StartTrigger> 
+                </StartTrigger>
+            </Act>
+
+            <Act name="Lane_Change">
+                <ManeuverGroup name="FollowCar_Lane_Change" maximumExecutionCount="1">
+                    <Actors selectTriggeringEntities="false">
+                        <EntityRef entityRef="FollowCar"/>
+                    </Actors>
+                    <Maneuver name="FollowCar_Evasive_Maneuver"> 
+                        <Event name="FollowCar_LaneChange_Right" priority="parallel" maximumExecutionCount="1">
+                                <Action name="FollowCar_Evasive_Action">
+                                    <PrivateAction>
+                                        <LateralAction>
+                                            <LaneChangeAction>
+                                                <LaneChangeActionDynamics dynamicsShape="linear" value="15" dynamicsDimension="distance"/>
+                                                <LaneChangeTarget>
+                                                    <RelativeTargetLane entityRef="FollowCar" value="-1"/>
+                                                </LaneChangeTarget>
+                                            </LaneChangeAction>
+                                        </LateralAction>
+                                    </PrivateAction>
+                                </Action>
+                                <StartTrigger>
+                                    <ConditionGroup>
+                                    <Condition name="TimeToChangeLane" conditionEdge="rising" delay="0">
+                                        <ByEntityCondition>
+                                        <TriggeringEntities triggeringEntitiesRule="any">
+                                            <EntityRef entityRef="FollowCar"/>
+                                        </TriggeringEntities>
+                                        <EntityCondition>
+                                            <RelativeDistanceCondition entityRef="LeadCar" relativeDistanceType="longitudinal" value="8.0" rule="lessThan" freespace="true"/>
+                                        </EntityCondition>
+                                        </ByEntityCondition>
+                                    </Condition>
+                                    </ConditionGroup>
+                                </StartTrigger>
+                        </Event>
+                    </Maneuver>
+                </ManeuverGroup>
+                <StartTrigger> 
+                </StartTrigger>
+            </Act>
+        </Story>
+        <StopTrigger>
+            <ConditionGroup>
+                <Condition name="SimulationStop" conditionEdge="rising" delay="1.0">
+                    <ByValueCondition> 
+                        <SimulationTimeCondition value="25" rule="greaterThan"/> 
+                    </ByValueCondition>
+                </Condition>
+            </ConditionGroup>
+        </StopTrigger>
+    </Storyboard>
+</OpenSCENARIO>

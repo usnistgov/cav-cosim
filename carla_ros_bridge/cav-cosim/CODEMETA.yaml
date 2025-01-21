@@ -1,0 +1,18 @@
+# Available themes listed at https://github.com/usnistgov/opensource-repo/blob/main/CODEMETA.yaml
+
+---
+categories:
+  # - ai-ml
+  # - performance-and-workflow
+  # - scientific-software
+  - simulation
+  # - tools
+  # - visualization
+
+themes:
+  - Advanced communications
+  - Information Technology
+    - Cyber-physical systems
+    - Internet of Things (IoT)
+  - Transportation
+    - Automotive
