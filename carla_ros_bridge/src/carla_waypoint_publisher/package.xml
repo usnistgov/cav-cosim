@@ -12,7 +12,7 @@
 
   <!-- ROS 2 DEPENDENCIES-->
   <depend condition="$ROS_VERSION == 2">rclpy</depend>
-  
+
   <export>
     <build_type condition="$ROS_VERSION == 2">ament_python</build_type>
   </export>

@@ -10,14 +10,30 @@
 from ros_compatibility.core import get_ros_version
 ROS_VERSION  = get_ros_version()
 
-import rclpy.exceptions
+if ROS_VERSION == 1:
 
-class ROSException(Exception):
-    pass
+    import rospy
 
-class ROSInterruptException(rclpy.exceptions.ROSInterruptException):
-    pass
+    class ROSException(rospy.ROSException):
+        pass
 
-class ServiceException(Exception):
-    pass
+    class ROSInterruptException(rospy.ROSInterruptException):
+        pass
+
+    class ServiceException(rospy.ServiceException):
+        pass
+
+
+elif ROS_VERSION == 2:
+
+    import rclpy.exceptions
+
+    class ROSException(Exception):
+        pass
+
+    class ROSInterruptException(rclpy.exceptions.ROSInterruptException):
+        pass
+
+    class ServiceException(Exception):
+        pass
 

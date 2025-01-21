@@ -10,14 +10,14 @@
 #include <carla_msgs/msg/carla_ego_vehicle_status.hpp>
 #include <carla_msgs/msg/carla_status.hpp>
 #include <carla_msgs/msg/carla_control.hpp>
-#include <carla_ros_scenario_runner_types/msg/carla_scenario_list.hpp>
-#include <carla_ros_scenario_runner_types/msg/carla_scenario_runner_status.hpp>
+
+
 #include <nav_msgs/msg/odometry.hpp>
 #include "rclcpp/rclcpp.hpp"
 #include <rviz_common/panel.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/float64.hpp>
-#include <carla_ros_scenario_runner_types/srv/execute_scenario.hpp>
+
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include "rviz_common/ros_integration/ros_node_abstraction_iface.hpp"
@@ -70,11 +70,11 @@ protected:
   void setSimulationButtonStatus(bool active);
   void setScenarioRunnerStatus(bool active);
 
-  void scenarioRunnerStatusChanged(const carla_ros_scenario_runner_types::msg::CarlaScenarioRunnerStatus::SharedPtr msg);
+
   void carlaStatusChanged(const carla_msgs::msg::CarlaStatus::SharedPtr msg);
   void egoVehicleStatusChanged(const carla_msgs::msg::CarlaEgoVehicleStatus::SharedPtr msg);
   void egoVehicleOdometryChanged(const nav_msgs::msg::Odometry::SharedPtr msg);
-  void carlaScenariosChanged(const carla_ros_scenario_runner_types::msg::CarlaScenarioList::SharedPtr msg);
+
   carla_msgs::msg::CarlaStatus::SharedPtr mCarlaStatus{nullptr};
 
   rclcpp::Node::SharedPtr _node;
@@ -100,13 +100,11 @@ protected:
   rclcpp::Subscription<carla_msgs::msg::CarlaStatus>::SharedPtr mCarlaStatusSubscriber;
   rclcpp::Subscription<carla_msgs::msg::CarlaEgoVehicleStatus>::SharedPtr mEgoVehicleStatusSubscriber;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr mEgoVehicleOdometrySubscriber;
-  rclcpp::Client<carla_ros_scenario_runner_types::srv::ExecuteScenario>::SharedPtr mExecuteScenarioClient;
-  rclcpp::Subscription<carla_ros_scenario_runner_types::msg::CarlaScenarioList>::SharedPtr mScenarioSubscriber;
-  rclcpp::Subscription<carla_ros_scenario_runner_types::msg::CarlaScenarioRunnerStatus>::SharedPtr mScenarioRunnerStatusSubscriber;
+
   rclcpp::Publisher<geometry_msgs::msg::Pose>::SharedPtr mCameraPosePublisher;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr mTargetSpeedPublisher;
 
-  carla_ros_scenario_runner_types::msg::CarlaScenarioList::SharedPtr mCarlaScenarios;
+
 
 
   float mLinearVelocity{0.0};

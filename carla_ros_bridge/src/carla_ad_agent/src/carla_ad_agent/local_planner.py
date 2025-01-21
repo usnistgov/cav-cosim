@@ -1,14 +1,4 @@
 #!/usr/bin/env python
-#
-# Copyright (c) 2018-2020 Intel Corporation
-#
-# This work is licensed under the terms of the MIT license.
-# For a copy, see <https://opensource.org/licenses/MIT>.
-#
-"""
-This module contains a local planner to perform
-low-level waypoint following based on PID controllers.
-"""
 
 import collections
 import math
@@ -18,27 +8,18 @@ import ros_compatibility as roscomp
 from ros_compatibility.node import CompatibleNode
 from ros_compatibility.qos import QoSProfile, DurabilityPolicy
 
-from carla_ad_agent.vehicle_pid_controller import VehiclePIDController
-from carla_ad_agent.misc import distance_vehicle
-
 from carla_msgs.msg import CarlaEgoVehicleControl  # pylint: disable=import-error
 from nav_msgs.msg import Odometry, Path
-from std_msgs.msg import Float64
 from visualization_msgs.msg import Marker
 
 
 class LocalPlanner(CompatibleNode):
     """
-    LocalPlanner implements the basic behavior of following a trajectory of waypoints that is
-    generated on-the-fly. The low-level motion of the vehicle is computed by using two PID
-    controllers, one is used for the lateral control and the other for the longitudinal
-    control (cruise speed).
-
-    When multiple paths are available (intersections) this local planner makes a random choice.
+    LocalPlanner implements the basic behavior of following a trajectory of waypoints,
+    allowing direct vehicle control commands.
     """
 
-    # minimum distance to target waypoint as a percentage (e.g. within 90% of
-    # total distance)
+    # minimum distance to target waypoint as a percentage (e.g., within 90% of total distance)
     MIN_DISTANCE_PERCENTAGE = 0.9
 
     def __init__(self):
@@ -58,14 +39,10 @@ class LocalPlanner(CompatibleNode):
         args_longitudinal_dict['K_D'] = self.get_param("Kd_longitudinal", 0.515)
 
         self.data_lock = threading.Lock()
-
         self._current_pose = None
         self._current_speed = None
-        self._target_speed = 0.0
-
-        self._buffer_size = 5
         self._waypoints_queue = collections.deque(maxlen=20000)
-        self._waypoint_buffer = collections.deque(maxlen=self._buffer_size)
+        self._waypoint_buffer = collections.deque(maxlen=5)
 
         # subscribers
         self._odometry_subscriber = self.new_subscription(
@@ -78,11 +55,13 @@ class LocalPlanner(CompatibleNode):
             "/carla/{}/waypoints".format(role_name),
             self.path_cb,
             QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
-        self._target_speed_subscriber = self.new_subscription(
-            Float64,
-            "/carla/{}/speed_command".format(role_name),
-            self.target_speed_cb,
-            QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+
+        # New subscriber for control commands from Simulink
+        self._control_cmd_subscriber = self.new_subscription(
+            CarlaEgoVehicleControl,
+            "/carla/{}/vehicle_control_cmd".format(role_name),
+            self.vehicle_control_cb,
+            qos_profile=10)
 
         # publishers
         self._target_pose_publisher = self.new_publisher(
@@ -94,20 +73,12 @@ class LocalPlanner(CompatibleNode):
             "/carla/{}/vehicle_control_cmd".format(role_name),
             qos_profile=10)
 
-        # initializing controller
-        self._vehicle_controller = VehiclePIDController(
-            self, args_lateral=args_lateral_dict, args_longitudinal=args_longitudinal_dict)
-
     def odometry_cb(self, odometry_msg):
         with self.data_lock:
             self._current_pose = odometry_msg.pose.pose
             self._current_speed = math.sqrt(odometry_msg.twist.twist.linear.x ** 2 +
                                             odometry_msg.twist.twist.linear.y ** 2 +
                                             odometry_msg.twist.twist.linear.z ** 2) * 3.6
-
-    def target_speed_cb(self, target_speed_msg):
-        with self.data_lock:
-            self._target_speed = target_speed_msg.data
 
     def path_cb(self, path_msg):
         with self.data_lock:
@@ -127,10 +98,18 @@ class LocalPlanner(CompatibleNode):
         marker_msg.color.a = 1.0
         return marker_msg
 
+    def vehicle_control_cb(self, control_cmd_msg):
+        """
+        Receives control commands directly from Simulink and publishes them
+        to the CARLA vehicle control command topic.
+        """
+        with self.data_lock:
+            self._control_cmd_publisher.publish(control_cmd_msg)
+
     def run_step(self):
         """
-        Executes one step of local planning which involves running the longitudinal
-        and lateral PID controllers to follow the waypoints trajectory.
+        Executes one step of local planning for waypoint following,
+        allows direct control via Simulink.
         """
         with self.data_lock:
             if not self._waypoint_buffer and not self._waypoints_queue:
@@ -138,14 +117,9 @@ class LocalPlanner(CompatibleNode):
                 self.emergency_stop()
                 return
 
-            # when target speed is 0, brake.
-            if self._target_speed == 0.0:
-                self.emergency_stop()
-                return
-
-            #   Buffering the waypoints
+            # Buffering the waypoints if buffer is empty
             if not self._waypoint_buffer:
-                for i in range(self._buffer_size):
+                for i in range(5):
                     if self._waypoints_queue:
                         self._waypoint_buffer.append(self._waypoints_queue.popleft())
                     else:
@@ -155,14 +129,9 @@ class LocalPlanner(CompatibleNode):
             target_pose = self._waypoint_buffer[0]
             self._target_pose_publisher.publish(self.pose_to_marker_msg(target_pose))
 
-            # move using PID controllers
-            control_msg = self._vehicle_controller.run_step(
-                self._target_speed, self._current_speed, self._current_pose, target_pose)
-
-            # purge the queue of obsolete waypoints
+            # Purge obsolete waypoints
             max_index = -1
-
-            sampling_radius = self._target_speed * 1 / 3.6  # search radius for next waypoints in seconds
+            sampling_radius = self._current_speed * 1 / 3.6  # radius in meters
             min_distance = sampling_radius * self.MIN_DISTANCE_PERCENTAGE
 
             for i, route_point in enumerate(self._waypoint_buffer):
@@ -171,8 +140,6 @@ class LocalPlanner(CompatibleNode):
             if max_index >= 0:
                 for i in range(max_index + 1):
                     self._waypoint_buffer.popleft()
-
-            self._control_cmd_publisher.publish(control_msg)
 
     def emergency_stop(self):
         control_msg = CarlaEgoVehicleControl()
@@ -186,13 +153,9 @@ class LocalPlanner(CompatibleNode):
 
 def main(args=None):
     """
-
-    main function
-
-    :return:
+    Main function to initialize ROS node and run the local planner.
     """
     roscomp.init("local_planner", args=args)
-
     local_planner = None
     update_timer = None
     try:

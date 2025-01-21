@@ -17,6 +17,7 @@ def generate_launch_description():
         ),
         launch.actions.DeclareLaunchArgument(
             name='spawn_point_hero',
+            #default_value='78.60,353.25,0,0,0,0.67,0.74'
             default_value='None'
         ),
         launch.actions.DeclareLaunchArgument(

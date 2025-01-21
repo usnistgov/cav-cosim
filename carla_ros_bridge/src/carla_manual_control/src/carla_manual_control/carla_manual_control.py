@@ -325,7 +325,7 @@ class HUD(object):
         self.vehicle_info_subscriber = node.new_subscription(
             CarlaEgoVehicleInfo,
             "/carla/{}/vehicle_info".format(self.role_name),
-            self.vehicle_info_updated, 
+            self.vehicle_info_updated,
             qos_profile=QoSProfile(depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL))
 
         self.x, self.y, self.z = 0, 0, 0

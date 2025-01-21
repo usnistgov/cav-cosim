@@ -20,7 +20,7 @@ position.
 import ros_compatibility as roscomp
 from ros_compatibility.node import CompatibleNode
 
-from geometry_msgs.msg import PoseWithCovarianceStamped, Pose 
+from geometry_msgs.msg import PoseWithCovarianceStamped, Pose
 
 
 class SetInitialPose(CompatibleNode):
