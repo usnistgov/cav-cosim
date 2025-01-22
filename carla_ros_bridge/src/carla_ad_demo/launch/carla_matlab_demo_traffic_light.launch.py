@@ -6,7 +6,22 @@ from ament_index_python.packages import get_package_share_directory
 
 # Goal Pose for the Ego Vehicle (Town01) for scenarios: Stopped Vehicle Ahead
 # Uncomment and configure if needed
-default_goal_pose = {
+
+# Goal position for first example of intersection
+# Spawn_point:"spawn_point": {"x": -145.52, "y": -100.15, "z": 1.0, "roll": 0.0, "pitch": 0.0, "yaw": 90.0}
+"""default_goal_pose = {
+    'px': float(-145.235),
+    'py': float(46.6293),
+    'pz': float(0.0),
+    'ox': float(0.0),
+    'oy': float(0.0),
+    'oz': float(0.0),
+    'ow': float(1.0),
+}"""
+
+# Goal position for second example of intersection
+# "spawn_point": {"x": 3.76259, "y": 39.6256, "z": 1.0, "roll": 0.0, "pitch": 0.0, "yaw": 90.0},
+"""default_goal_pose = {
     'px': float(7.4879),
     'py': float(168.359),
     'pz': float(0.0),
@@ -14,19 +29,19 @@ default_goal_pose = {
     'oy': float(0.0),
     'oz': float(0.0),
     'ow': float(1.0),
-}
+}"""
 
-'''default_goal_pose = {
-    'px': float(-83.0538),
-    'py': float(-160.011),
+# Goal position for third example of intersection
+#"spawn_point": {"x": -84.9835, "y": -28.3443, "z": 1.0, "roll": 0.0, "pitch": 0.0, "yaw": 0.0},
+default_goal_pose = {
+    'px': float(-84.7606),
+    'py': float(-150.62),
     'pz': float(0.0),
     'ox': float(0.0),
     'oy': float(0.0),
     'oz': float(0.0),
     'ow': float(1.0),
-}'''
-
-
+}
 
 # String with message to publish on topic /carla/available/scenarios
 #ros_topic_msg_string = "{{ 'scenarios': [{{ 'name': 'Slow Vehicle Ahead', 'scenario_file': '{}'}}] }}".format(

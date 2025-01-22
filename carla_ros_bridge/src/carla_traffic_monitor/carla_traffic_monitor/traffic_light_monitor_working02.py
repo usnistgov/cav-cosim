@@ -4,6 +4,7 @@ from carla_msgs.msg import CarlaTrafficLightInfoList, CarlaTrafficLightStatusLis
 from nav_msgs.msg import Odometry
 import math
 import carla
+import csv
 from datetime import datetime
 
 
@@ -14,6 +15,12 @@ class TrafficLightDistanceLogger(Node):
         self.traffic_light_status = {}
         self.ego_vehicle_position = None
         self.ego_vehicle_orientation = None
+
+        # CSV file setup
+        self.csv_file = "traffic_light_log.csv"
+        with open(self.csv_file, mode="w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(["Timestamp", "Traffic Light ID", "Remaining Time (s)", "State"])
 
         # Connect to CARLA
         self.client = carla.Client('localhost', 2000)
@@ -107,21 +114,32 @@ class TrafficLightDistanceLogger(Node):
                 # Fetch durations for each state
                 yellow_time = traffic_light_actor.get_yellow_time()
                 green_time = traffic_light_actor.get_green_time()
-                red_time = traffic_light_actor.get_red_time()
 
-                # Calculate red_duration for the intersection
-                red_duration = self.calculate_red_light_duration(traffic_light_actor)
+                # Initialize or retrieve last_state and remaining_time
+                if light_id not in self.traffic_light_status:
+                    self.traffic_light_status[light_id] = {
+                        'last_state': None,
+                        'remaining_time': 29.0  # Default initial red duration
+                    }
+
+                light_state = self.traffic_light_status[light_id]
 
                 # Handle state transitions and calculate time_remaining
                 if state == carla.TrafficLightState.Red:
-                    time_remaining = self.calculate_red_light_remaining_time(traffic_light_actor, red_duration)
+                    if light_state['last_state'] == None:
+                        # Transition from Yellow to Red: Reset to 45 seconds
+                        time_remaining = self.calculate_red_light_remaining_time(traffic_light_actor, 29.0)
+                    else:
+                        # Calculate remaining time with the current duration
+                        time_remaining = self.calculate_red_light_remaining_time(traffic_light_actor, 60.0)
+
+                    # Log red light time to CSV
+                    self.log_red_light_data(light_id, time_remaining, state)
 
                 elif state == carla.TrafficLightState.Yellow:
                     time_remaining = yellow_time - elapsed_time
-
                 elif state == carla.TrafficLightState.Green:
                     time_remaining = green_time - elapsed_time
-
                 else:
                     time_remaining = 0.0  # Default for unknown/off state
 
@@ -129,14 +147,18 @@ class TrafficLightDistanceLogger(Node):
                 if time_remaining < 0:
                     time_remaining = 0.0
 
+                # Update last_state
+                light_state['last_state'] = state
+                light_state['remaining_time'] = time_remaining
+
                 # Log the information
                 position = traffic_light_actor.get_transform().location
                 vehicle_x, vehicle_y = self.ego_vehicle_position
                 self.get_logger().info(
-                    f"Nearest Traffic Light ID: {light_id}, Distance to Stop Line: {distance_to_traffic_light:.2f} meters, "
+                    f"Nearest Traffic Light ID: {light_id}, Distance to Traffic Light: {distance_to_traffic_light:.2f} meters, "
                     f"Status: {state}, Time Remaining: {time_remaining:.2f}s\n"
                     f"Vehicle Position: ({vehicle_x:.2f}, {vehicle_y:.2f})\n"
-                    f"Traffic Light Position: ({position.x:.2f}, {position.y:.2f}), "
+                    f"Traffic Light Position: ({position.x:.2f}, {position.y:.2f})"
                 )
 
                 # Publish the nearest traffic light info
@@ -150,7 +172,6 @@ class TrafficLightDistanceLogger(Node):
                 self.get_logger().warn(f"Could not fetch CARLA actor for traffic light ID: {light_id}")
         else:
             self.get_logger().info("No traffic light is directly in front of the vehicle.")
-
 
 
     def calculate_red_light_remaining_time(self, nearest_traffic_light, red_duration):
@@ -191,10 +212,10 @@ class TrafficLightDistanceLogger(Node):
             ]
 
             # Calculate total elapsed time of other traffic lights
-            total_elapsed_time = sum(tl.get_elapsed_time() for tl in intersection_traffic_lights) + nearest_traffic_light.get_elapsed_time()
+            total_elapsed_time = sum(tl.get_elapsed_time() for tl in intersection_traffic_lights)
 
             # Handle remaining time countdown
-            if remaining_time > 0.5:
+            if remaining_time > 0.075:
                 if total_elapsed_time < state['last_elapsed_time']:
                     remaining_time = max(0.0, remaining_time)
                 else:
@@ -212,45 +233,15 @@ class TrafficLightDistanceLogger(Node):
             self.get_logger().error(f"Error calculating red light time: {e}")
             return 0.0
 
-    def calculate_red_light_duration(self, nearest_traffic_light):
-        """
-        Calculate the red duration for the nearest traffic light by summing up
-        the green, yellow, and red durations of other traffic lights in the same intersection.
-        """
-        try:
-            # Get the nearest traffic light ID and its position
-            traffic_light_id = nearest_traffic_light.id
-            nearest_light_position = nearest_traffic_light.get_transform().location
 
-            # Get all traffic lights in the world
-            all_traffic_lights = self.world.get_actors().filter('traffic.traffic_light')
 
-            # Identify traffic lights in the same intersection by proximity (exclude the nearest one)
-            intersection_traffic_lights = [
-                tl for tl in all_traffic_lights
-                if self.calculate_distance(
-                    nearest_light_position.x, nearest_light_position.y,
-                    tl.get_transform().location.x, tl.get_transform().location.y
-                ) < 50 and tl.id != traffic_light_id
-            ]
 
-            # Calculate the red duration as the sum of green, yellow, and red durations of other traffic lights
-            red_duration = 0.0
-            for traffic_light in intersection_traffic_lights:
-                green_time = traffic_light.get_green_time()
-                yellow_time = traffic_light.get_yellow_time()
-                red_time = traffic_light.get_red_time()
+    def log_red_light_data(self, light_id, remaining_time, state):
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(self.csv_file, mode="a", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow([timestamp, light_id, remaining_time, state])
 
-                red_duration += green_time + yellow_time + red_time
-
-            intersection_ids = [tl.id for tl in intersection_traffic_lights]
-            self.get_logger().info(f"TRAFFIC LIGHTS IN THE INTERSECTION: {intersection_ids}")
-
-            return red_duration
-
-        except Exception as e:
-            self.get_logger().error(f"Error calculating red duration: {e}")
-            return 0.0
 
     def find_nearest_traffic_light_in_front(self):
         candidate_lights = []
@@ -277,7 +268,7 @@ class TrafficLightDistanceLogger(Node):
                         nearest_light_id = light_id
 
         if nearest_light_id:
-            # Retrieve the distance to stop line
+            # Retrieve the exact distance using calculate_distance
             nearest_light_info = self.traffic_lights[nearest_light_id]
             nearest_light_position = nearest_light_info.transform.position
             exact_distance = self.calculate_distance(
@@ -285,7 +276,7 @@ class TrafficLightDistanceLogger(Node):
                 self.ego_vehicle_position[1],
                 nearest_light_position.x,
                 nearest_light_position.y
-            ) - 30.0
+            )
             return (nearest_light_id, exact_distance)
         else:
             return None
