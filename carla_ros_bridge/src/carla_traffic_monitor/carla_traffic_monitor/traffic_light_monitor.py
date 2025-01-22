@@ -286,6 +286,12 @@ class TrafficLightDistanceLogger(Node):
                 nearest_light_position.x,
                 nearest_light_position.y
             ) - 30.0
+
+            # Ensure the distance is not negative
+
+            if exact_distance < 0.0:
+                exact_distance = 0.0
+
             return (nearest_light_id, exact_distance)
         else:
             return None
