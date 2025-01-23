@@ -12,7 +12,7 @@
     export PYTHONPATH=$PYTHONPATH:$CARLA_ROOT/PythonAPI/carla/dist/carla-<carla_version_and_arch>.egg:$CARLA_ROOT/PythonAPI/carla
     ```
 
-- **ROS2:**
+2. **ROS2:**
   - [__ROS 2 Humble__](https://docs.ros.org/en/humble/Installation.html) — For Ubuntu 22.04 (Jammy)
   - Additional ROS packages may be required depending on your needs. [rviz2](https://github.com/ros2/rviz) is highly recommended to visualize ROS data.
   - Append the following to your `{.zshrc|.bashrc}`.
@@ -20,7 +20,7 @@
     source /opt/ros/humble/setup.{zsh|bash}
     ```
     
-2. **Matlab/Simulink:**
+3. **Matlab/Simulink:**
   - Download and install Matlab 2024b from [MathWorks](https://www.mathworks.com/help/install/ug/install-products-with-internet-connection.html).
     
 ## 3. Configuration
