@@ -1,6 +1,3 @@
-# Automatic Emergency Braking Feature Demo
-![rviz setup](./docs/images/abf_demo.png "ABF Demo")
-
 ## 1. Software and Data Description
 
 
