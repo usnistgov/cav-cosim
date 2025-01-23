@@ -52,7 +52,7 @@ You will require 3 Linux Terminals to run this demo:
    ```
    /usr/local/MATLAB/R2024b/bin/matlab -softwareopengl
    ```
-3. **Terminal 03: Launch carla_traffic_monitor package**
+3. **Terminal 03: Launch `carla_traffic_monitor` package**
    ```
    ros2 run carla_traffic_monitor traffic_light_monitor
    ```
