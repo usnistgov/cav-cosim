@@ -7,13 +7,13 @@ import carla
 from transitions import Machine
 
 
-class TrafficLightFSM(Node):
+class TrafficLightMonitor(Node):
     """ ROS2 Node that detects the nearest traffic light, calculates the distance to it, determines the remaining time for each state, and identifies transitions between traffic light states using finite state machine (fsm). """
 
     states = ["Red", "Yellow", "Green"]
 
     def __init__(self):
-        super().__init__("traffic_light_distance_logger")
+        super().__init__("traffic_light_monitor")
 
         self.traffic_lights = {}
         self.traffic_light_status = {}
@@ -30,7 +30,7 @@ class TrafficLightFSM(Node):
             TrafficLightInfo, '/carla/hero/traffic_light_in_front', 10)
 
         # FSM Initialization
-        self.machine = Machine(model=self, states=TrafficLightFSM.states, initial="Red")
+        self.machine = Machine(model=self, states=TrafficLightMonitor.states, initial="Red")
         self.machine.add_transition("turn_green", "Red", "Green")
         self.machine.add_transition("turn_yellow", "Green", "Yellow")
         self.machine.add_transition("turn_red", "Yellow", "Red")
@@ -47,7 +47,7 @@ class TrafficLightFSM(Node):
 
         # Timer to log nearest traffic light every 0.5s
         self.timer = self.create_timer(0.5, self.process_nearest_traffic_light)
-        self.get_logger().info("🚦 TrafficLightFSM Node Initialized!")
+        self.get_logger().info("🚦 TrafficLightMonitor Node Initialized!")
 
     def info_callback(self, msg):
         """ Callback function for handling incoming traffic light information messages"""
@@ -355,12 +355,12 @@ class TrafficLightFSM(Node):
 def main(args=None):
     """ ROS2 Node Execution """
     rclpy.init(args=args)
-    node = TrafficLightFSM()
+    node = TrafficLightMonitor()
 
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
-        node.get_logger().info("Shutting down TrafficLightFSM Node.")
+        node.get_logger().info("Shutting down TrafficLightMonitor Node.")
     finally:
         node.destroy_node()
         rclpy.shutdown()
