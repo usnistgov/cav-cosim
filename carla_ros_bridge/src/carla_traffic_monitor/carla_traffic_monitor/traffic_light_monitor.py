@@ -4,12 +4,17 @@ from carla_msgs.msg import CarlaTrafficLightInfoList, CarlaTrafficLightStatusLis
 from nav_msgs.msg import Odometry
 import math
 import carla
-from datetime import datetime
+from transitions import Machine
 
 
-class TrafficLightDistanceLogger(Node):
+class TrafficLightFSM(Node):
+    """ ROS2 Node that detects the nearest traffic light, calculates the distance to it, determines the remaining time for each state, and identifies transitions between traffic light states using finite state machine (fsm). """
+
+    states = ["Red", "Yellow", "Green"]
+
     def __init__(self):
-        super().__init__('traffic_light_distance_logger')
+        super().__init__("traffic_light_distance_logger")
+
         self.traffic_lights = {}
         self.traffic_light_status = {}
         self.ego_vehicle_position = None
@@ -24,31 +29,28 @@ class TrafficLightDistanceLogger(Node):
         self.traffic_light_in_front_pub = self.create_publisher(
             TrafficLightInfo, '/carla/hero/traffic_light_in_front', 10)
 
-        # Subscriptions
-        self.create_subscription(
-            CarlaTrafficLightInfoList,
-            '/carla/traffic_lights/info',
-            self.info_callback,
-            10
-        )
-        self.create_subscription(
-            CarlaTrafficLightStatusList,
-            '/carla/traffic_lights/status',
-            self.status_callback,
-            10
-        )
-        self.create_subscription(
-            Odometry,
-            '/carla/hero/odometry',
-            self.odometry_callback,
-            10
-        )
+        # FSM Initialization
+        self.machine = Machine(model=self, states=TrafficLightFSM.states, initial="Red")
+        self.machine.add_transition("turn_green", "Red", "Green")
+        self.machine.add_transition("turn_yellow", "Green", "Yellow")
+        self.machine.add_transition("turn_red", "Yellow", "Red")
 
-        # Timer to log distances periodically and find the nearest traffic light
-        self.timer = self.create_timer(0.5, self.log_and_publish_nearest_traffic_light)
-        self.get_logger().info("TrafficLightDistanceLogger node initialized.")
+
+        # Nearest Traffic Light Tracking
+        self.nearest_traffic_light_id = None
+        self.previous_state = "Red"
+
+        # ROS2 Subscriptions
+        self.create_subscription(CarlaTrafficLightInfoList, "/carla/traffic_lights/info", self.info_callback, 10)
+        self.create_subscription(CarlaTrafficLightStatusList, "/carla/traffic_lights/status", self.status_callback, 10)
+        self.create_subscription(Odometry, "/carla/hero/odometry", self.odometry_callback, 10)
+
+        # Timer to log nearest traffic light every 0.5s
+        self.timer = self.create_timer(0.5, self.process_nearest_traffic_light)
+        self.get_logger().info("🚦 TrafficLightFSM Node Initialized!")
 
     def info_callback(self, msg):
+        """ Callback function for handling incoming traffic light information messages"""
         if not msg.traffic_lights:
             self.get_logger().warn("No traffic lights received in info message.")
             return
@@ -57,14 +59,17 @@ class TrafficLightDistanceLogger(Node):
         self.traffic_lights = {light.id: light for light in msg.traffic_lights}
 
     def status_callback(self, msg):
+        """ Updates traffic light states """
         if not msg.traffic_lights:
             self.get_logger().warn("No traffic lights received in status message.")
             return
 
         # Store traffic light statuses in a dictionary
-        self.traffic_light_status = {light.id: light for light in msg.traffic_lights}
+        for light in msg.traffic_lights:
+            self.traffic_light_status[light.id] = light.state
 
     def odometry_callback(self, msg):
+        """ Updates ego vehicle position and orientation """
         position = msg.pose.pose.position
         orientation = msg.pose.pose.orientation
         self.ego_vehicle_position = (position.x, position.y)
@@ -73,90 +78,116 @@ class TrafficLightDistanceLogger(Node):
             1.0 - 2.0 * (orientation.y**2 + orientation.z**2)
         )
 
-    def status_callback(self, msg):
-        if not msg.traffic_lights:
-            self.get_logger().warn("No traffic lights received in status message.")
+    def process_nearest_traffic_light(self):
+        """ Detect and process the nearest traffic light. """
+        if not self.traffic_lights or not self.ego_vehicle_position:
             return
 
-        # Store traffic light statuses as dictionaries, not CarlaTrafficLightStatus objects
-        self.traffic_light_status = {
-            light.id: {
-                'last_state': None,
-                'remaining_time': 29.5  # Default initial red duration
-            }
-            for light in msg.traffic_lights
-        }
-
-    def log_and_publish_nearest_traffic_light(self):
-        if not self.traffic_lights:
-            self.get_logger().warn("No traffic light data available.")
+        nearest_light = self.find_nearest_traffic_light()
+        if not nearest_light:
             return
 
-        if not self.ego_vehicle_position or self.ego_vehicle_orientation is None:
-            self.get_logger().warn("Ego vehicle position or orientation is not set.")
+        light_id, distance_to_light = nearest_light
+        traffic_light_actor = self.get_carla_traffic_light_actor(light_id)
+        if not traffic_light_actor:
             return
 
-        nearest_light = self.find_nearest_traffic_light_in_front()
-        if nearest_light:
-            light_id, distance_to_traffic_light = nearest_light
+        state = traffic_light_actor.get_state()
+        elapsed_time = traffic_light_actor.get_elapsed_time()
+        current_state = self.traffic_light_status.get(light_id, "Unknown")
+        reset_red_timer = self.handle_state_transition(self.previous_state, current_state, light_id)
+        self.previous_state = current_state
+
+        # Calculate remaining time, log traffic ligh info and publish to the topic
+        red_duration = self.calculate_red_light_duration(traffic_light_actor)
+        time_remaining = self.calculate_light_remaining_time(state, elapsed_time, traffic_light_actor, red_duration, reset_red_timer)
+        self.log_traffic_light_info(light_id, state, distance_to_light, time_remaining, traffic_light_actor.get_transform().location)
+        self.publish_traffic_light_info(light_id, state, distance_to_light, time_remaining)
+
+    def find_nearest_traffic_light(self):
+        """Find the traffic light that impact the vehicle. Return its id and the distance to its stop line."""
+
+        candidate_lights = []
+
+        for light_id, light_info in self.traffic_lights.items():
+            light_position = light_info.transform.position
+            light_x, light_y = light_position.x, light_position.y
+            distance = self.calculate_distance(self.ego_vehicle_position[0], self.ego_vehicle_position[1], light_x, light_y)
+
+            if self.is_in_front_of_vehicle(light_x, light_y) and distance < 300:
+                candidate_lights.append((light_id, light_info))
+
+        nearest_light_id = None
+        min_avg_distance = float('inf')
+
+        for light_id, light_info in candidate_lights:
             traffic_light_actor = self.get_carla_traffic_light_actor(light_id)
             if traffic_light_actor:
-                state = traffic_light_actor.get_state()
-                elapsed_time = traffic_light_actor.get_elapsed_time()
+                affected_waypoints = traffic_light_actor.get_affected_lane_waypoints()
+                if affected_waypoints:
+                    avg_distance = self.calculate_average_distance_to_waypoints(affected_waypoints)
+                    if avg_distance < min_avg_distance:
+                        min_avg_distance = avg_distance
+                        nearest_light_id = light_id
 
-                # Fetch durations for each state
-                yellow_time = traffic_light_actor.get_yellow_time()
-                green_time = traffic_light_actor.get_green_time()
-                red_time = traffic_light_actor.get_red_time()
+        if nearest_light_id:
+            # Retrieve the distance to stop line
+            nearest_light_info = self.traffic_lights[nearest_light_id]
+            nearest_light_position = nearest_light_info.transform.position
+            exact_distance = self.calculate_distance(
+                self.ego_vehicle_position[0],
+                self.ego_vehicle_position[1],
+                nearest_light_position.x,
+                nearest_light_position.y
+            ) - 30.0
 
-                # Calculate red_duration for the intersection
-                red_duration = self.calculate_red_light_duration(traffic_light_actor)
+            # Ensure the distance is not negative
+            if exact_distance < 0.0:
+                exact_distance = 0.0
 
-                # Handle state transitions and calculate time_remaining
-                if state == carla.TrafficLightState.Red:
-                    time_remaining = self.calculate_red_light_remaining_time(traffic_light_actor, red_duration)
-
-                elif state == carla.TrafficLightState.Yellow:
-                    time_remaining = yellow_time - elapsed_time
-
-                elif state == carla.TrafficLightState.Green:
-                    time_remaining = green_time - elapsed_time
-
-                else:
-                    time_remaining = 0.0  # Default for unknown/off state
-
-                # Avoid negative remaining time
-                if time_remaining < 0:
-                    time_remaining = 0.0
-
-                # Log the information
-                position = traffic_light_actor.get_transform().location
-                vehicle_x, vehicle_y = self.ego_vehicle_position
-                self.get_logger().info(
-                    f"Nearest Traffic Light ID: {light_id}, Distance to Stop Line: {distance_to_traffic_light:.2f} meters, "
-                    f"Status: {state}, Time Remaining: {time_remaining:.2f}s\n"
-                    f"Vehicle Position: ({vehicle_x:.2f}, {vehicle_y:.2f})\n"
-                    f"Traffic Light Position: ({position.x:.2f}, {position.y:.2f}), "
-                )
-
-                # Publish the nearest traffic light info
-                traffic_light_info = TrafficLightInfo()
-                traffic_light_info.id = light_id
-                traffic_light_info.distance = distance_to_traffic_light
-                traffic_light_info.status = str(state)
-                traffic_light_info.time_remaining = time_remaining
-                self.traffic_light_in_front_pub.publish(traffic_light_info)
-            else:
-                self.get_logger().warn(f"Could not fetch CARLA actor for traffic light ID: {light_id}")
+            return (nearest_light_id, exact_distance)
         else:
-            self.get_logger().info("No traffic light is directly in front of the vehicle.")
+            return None
 
+    def is_in_front_of_vehicle(self, light_x, light_y):
+        """Check if the traffic light is in front of the vehicle based on orientation."""
+        ego_x, ego_y = self.ego_vehicle_position
+        dx = light_x - ego_x
+        dy = light_y - ego_y
 
+        # Calculate angle to traffic light relative to the vehicle's orientation
+        angle_to_light = math.atan2(dy, dx)
+        angle_diff = angle_to_light - self.ego_vehicle_orientation
 
-    def calculate_red_light_remaining_time(self, nearest_traffic_light, red_duration):
+        # Normalize angle difference to [-pi, pi]
+        angle_diff = (angle_diff + math.pi) % (2 * math.pi) - math.pi
+
+        # Consider traffic lights within a certain angle threshold in front of the vehicle
+        return 0 > angle_diff > -math.radians(30)
+
+    def calculate_light_remaining_time(self, state, elapsed_time, traffic_light_actor, red_duration, reset_red_timer):
+        """ Calculate the remaining time for the current traffic light state. """
+        yellow_time= traffic_light_actor.get_yellow_time()
+        green_time = traffic_light_actor.get_green_time()
+
+        if state == carla.TrafficLightState.Red:
+            time_remaining = self.calculate_red_light_remaining_time(traffic_light_actor, red_duration, reset_red_timer)
+        elif state == carla.TrafficLightState.Yellow:
+            time_remaining = yellow_time - elapsed_time
+        elif state == carla.TrafficLightState.Green:
+            time_remaining = green_time - elapsed_time
+        else:
+            time_remaining = 0.0  # Default for unknown/off state
+
+        # Avoid negative remaining time
+        if time_remaining < 0:
+            time_remaining = 0.0
+        return time_remaining
+
+    def calculate_red_light_remaining_time(self, nearest_traffic_light, red_duration, reset_red_timer):
         """
-        Calculate the time remaining for the red light of the nearest traffic light
-        based solely on the given red duration.
+        Calculate the time remaining for the red light of the nearest traffic light,
+        while handling state transitions externally.
         """
         try:
             # Persistent storage for traffic light states
@@ -193,16 +224,23 @@ class TrafficLightDistanceLogger(Node):
             # Calculate total elapsed time of other traffic lights
             total_elapsed_time = sum(tl.get_elapsed_time() for tl in intersection_traffic_lights) + nearest_traffic_light.get_elapsed_time()
 
-            # Handle remaining time countdown
-            if remaining_time > 0.5:
-                if total_elapsed_time < state['last_elapsed_time']:
-                    remaining_time = max(0.0, remaining_time)
-                else:
-                    remaining_time = max(0.0, remaining_time - (total_elapsed_time - state['last_elapsed_time']))
+            # Reset logic: Handle transitions from non-red to red (externally detected via last_state)
+            if reset_red_timer:
+                remaining_time = red_duration  # Reset to full red duration
             else:
-                remaining_time = red_duration
+                # Handle countdown logic
+                if remaining_time > 0.0:
+                    if total_elapsed_time < state['last_elapsed_time']:
+                        # Prevent backward jumps in elapsed time
+                        remaining_time = max(0.0, remaining_time)
+                    else:
+                        # Count down the remaining time
+                        remaining_time = max(0.0, remaining_time - (total_elapsed_time - state['last_elapsed_time']))
+                else:
+                    # If remaining_time hits 0, stay there until reset
+                    remaining_time = 0.0
 
-            # Update the state
+            # Update state
             state['remaining_time'] = remaining_time
             state['last_elapsed_time'] = total_elapsed_time
             self.traffic_light_states[traffic_light_id] = state
@@ -243,59 +281,47 @@ class TrafficLightDistanceLogger(Node):
 
                 red_duration += green_time + yellow_time + red_time
 
-            intersection_ids = [tl.id for tl in intersection_traffic_lights]
-            self.get_logger().info(f"TRAFFIC LIGHTS IN THE INTERSECTION: {intersection_ids}")
-
             return red_duration
 
         except Exception as e:
             self.get_logger().error(f"Error calculating red duration: {e}")
             return 0.0
 
-    def find_nearest_traffic_light_in_front(self):
-        candidate_lights = []
+    def handle_state_transition(self, previous, current, light_id):
+        """ Handles FSM state transitions and logs the change """
+        reset_red_timer = False  # Initialize flag as False
 
-        for light_id, light_info in self.traffic_lights.items():
-            light_position = light_info.transform.position
-            light_x, light_y = light_position.x, light_position.y
-            distance = self.calculate_distance(self.ego_vehicle_position[0], self.ego_vehicle_position[1], light_x, light_y)
+        try:
+            if previous == 0 and current == 2:  # Red → Green
+                self.to_Green()
+                reset_red_timer = False  # Reset flag when Red → Green
 
-            if self.is_in_front_of_vehicle(light_x, light_y) and distance < 300:
-                candidate_lights.append((light_id, light_info))
+            elif previous == 2 and current == 1:  # Green → Yellow
+                self.to_Yellow()
+                reset_red_timer = False  # Reset flag when Green → Yellow
 
-        nearest_light_id = None
-        min_avg_distance = float('inf')
+            elif previous == 1 and current == 0:  # Yellow → Red (Reset Timer Here!)
+                if self.state != "Red":  # Ensure we're not already in Red
+                    self.to_Red()
+                    reset_red_timer = True  # 🚨 Set flag when transitioning to Red
+                else:
+                    self.get_logger().warn(f"⚠️ Traffic Light {light_id} already in Red, ignoring transition.")
 
-        for light_id, light_info in candidate_lights:
-            traffic_light_actor = self.get_carla_traffic_light_actor(light_id)
-            if traffic_light_actor:
-                affected_waypoints = traffic_light_actor.get_affected_lane_waypoints()
-                if affected_waypoints:
-                    avg_distance = self.calculate_average_distance_to_waypoints(affected_waypoints)
-                    if avg_distance < min_avg_distance:
-                        min_avg_distance = avg_distance
-                        nearest_light_id = light_id
+            self.get_logger().info(f"🚦 Traffic Light {light_id}: {previous} ➝ {current}, Reset: {reset_red_timer}")
 
-        if nearest_light_id:
-            # Retrieve the distance to stop line
-            nearest_light_info = self.traffic_lights[nearest_light_id]
-            nearest_light_position = nearest_light_info.transform.position
-            exact_distance = self.calculate_distance(
-                self.ego_vehicle_position[0],
-                self.ego_vehicle_position[1],
-                nearest_light_position.x,
-                nearest_light_position.y
-            ) - 30.0
+        except Exception as e:
+            self.get_logger().warn(f"⚠️ Invalid transition for Traffic Light {light_id}: {previous} ➝ {current} ({e})")
 
-            # Ensure the distance is not negative
+        return reset_red_timer
 
-            if exact_distance < 0.0:
-                exact_distance = 0.0
+    def get_carla_traffic_light_actor(self, light_id):
+        for actor in self.world.get_actors().filter('traffic.traffic_light'):
+            if actor.id == light_id:
+                return actor
+        return None
 
-            return (nearest_light_id, exact_distance)
-        else:
-            return None
-
+    def calculate_distance(self, ego_x, ego_y, light_x, light_y):
+        return math.sqrt((ego_x - light_x) ** 2 + (ego_y - light_y) ** 2)
 
     def calculate_average_distance_to_waypoints(self, waypoints):
         total_distance = 0.0
@@ -310,59 +336,35 @@ class TrafficLightDistanceLogger(Node):
             total_distance += distance
         return total_distance / len(waypoints) if waypoints else float('inf')
 
-    def get_carla_traffic_light_actor(self, light_id):
-        for actor in self.world.get_actors().filter('traffic.traffic_light'):
-            if actor.id == light_id:
-                return actor
-        return None
+    def publish_traffic_light_info(self, light_id, state, distance, time_remaining):
+        traffic_light_info = TrafficLightInfo()
+        traffic_light_info.id = light_id
+        traffic_light_info.distance = distance
+        traffic_light_info.status = str(state)
+        traffic_light_info.time_remaining = time_remaining
+        self.traffic_light_in_front_pub.publish(traffic_light_info)
 
-    def calculate_distance(self, ego_x, ego_y, light_x, light_y):
-        return math.sqrt((ego_x - light_x) ** 2 + (ego_y - light_y) ** 2)
-
-    def is_in_front_of_vehicle(self, light_x, light_y):
-        """Check if the traffic light is in front of the vehicle based on orientation."""
-        ego_x, ego_y = self.ego_vehicle_position
-        dx = light_x - ego_x
-        dy = light_y - ego_y
-
-        # Calculate angle to traffic light relative to the vehicle's orientation
-        angle_to_light = math.atan2(dy, dx)
-        angle_diff = angle_to_light - self.ego_vehicle_orientation
-
-        # Normalize angle difference to [-pi, pi]
-        angle_diff = (angle_diff + math.pi) % (2 * math.pi) - math.pi
-
-        # Consider traffic lights within a certain angle threshold in front of the vehicle
-        return 0 > angle_diff > -math.radians(30)
-
-
+    def log_traffic_light_info(self, light_id, state, distance, time_remaining, position):
+        vehicle_x, vehicle_y = self.ego_vehicle_position
+        self.get_logger().info(
+            f"🚦 Light ID: {light_id}, Distance: {distance:.2f}m, Status: {state}, "
+            f"Time Left: {time_remaining:.2f}s | Light Position: ({position.x:.2f}, {position.y:.2f}), "
+            f"Vehicle Position: ({vehicle_x:.2f}, {vehicle_y:.2f})"
+        )
 
 def main(args=None):
+    """ ROS2 Node Execution """
     rclpy.init(args=args)
-    node = TrafficLightDistanceLogger()
+    node = TrafficLightFSM()
 
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
-        node.get_logger().info("Shutting down node.")
+        node.get_logger().info("Shutting down TrafficLightFSM Node.")
     finally:
         node.destroy_node()
         rclpy.shutdown()
 
 
-if __name__ == '__main__':
-    main()
-
-    node = TrafficLightDistanceLogger()
-
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        node.get_logger().info("Shutting down node.")
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
