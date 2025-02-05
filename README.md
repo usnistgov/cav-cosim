@@ -1,5 +1,7 @@
-## 1. Software and Data Description
-
+## 1. Software
+  - MATLAB/Simulink Version: R2024b
+  - OS: Ubuntu 22.04
+  - ROS 2 Distribution: Humble
 
 ## 2. Before You Begin
 1. **CARLA:**
