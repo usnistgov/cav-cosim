@@ -1,5 +1,5 @@
 % Define the path to the custom message folder
-customMsgFolder = fullfile('/home/iotav/iotav/carla_ros2_matlab-demo/carla_ros_bridge/install/carla_msgs/share');
+customMsgFolder = fullfile('/home/hnh21/iotav/cosim/carla_ros_bridge/install/carla_msgs/share');
 
 % Generate custom messages for ROS 2
 ros2genmsg(customMsgFolder);
