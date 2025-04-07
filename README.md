@@ -64,7 +64,6 @@ You will require 3 Linux Terminals to run this demo:
     ```
 5. **In matlab**
     - Run setup_carla_msgs_in_simulink.m
-    - Run initialize_simulation.m
-    - Open and run Traffic_Light_ROS2_demo.slx
+    - Run startSimulinkModel.m
 
 
