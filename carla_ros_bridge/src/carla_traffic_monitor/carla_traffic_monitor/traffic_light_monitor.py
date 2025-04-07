@@ -5,6 +5,8 @@ from nav_msgs.msg import Odometry
 import math
 import carla
 from transitions import Machine
+from rosgraph_msgs.msg import Clock
+
 
 
 class TrafficLightMonitor(Node):
@@ -19,6 +21,8 @@ class TrafficLightMonitor(Node):
         self.traffic_light_status = {}
         self.ego_vehicle_position = None
         self.ego_vehicle_orientation = None
+
+
 
         # Connect to CARLA
         self.client = carla.Client('localhost', 2000)
@@ -44,9 +48,11 @@ class TrafficLightMonitor(Node):
         self.create_subscription(CarlaTrafficLightInfoList, "/carla/traffic_lights/info", self.info_callback, 10)
         self.create_subscription(CarlaTrafficLightStatusList, "/carla/traffic_lights/status", self.status_callback, 10)
         self.create_subscription(Odometry, "/carla/hero/odometry", self.odometry_callback, 10)
+        self.create_subscription(Clock, '/clock', self.clock_callback, 10)
 
-        # Timer to log nearest traffic light every 0.5s
-        self.timer = self.create_timer(0.5, self.process_nearest_traffic_light)
+
+        # Timer to log nearest traffic light every 0.1s
+        self.timer = self.create_timer(0.1, self.process_nearest_traffic_light)
         self.get_logger().info("🚦 TrafficLightMonitor Node Initialized!")
 
     def info_callback(self, msg):
@@ -134,16 +140,7 @@ class TrafficLightMonitor(Node):
             # Retrieve the distance to stop line
             nearest_light_info = self.traffic_lights[nearest_light_id]
             nearest_light_position = nearest_light_info.transform.position
-            exact_distance = self.calculate_distance(
-                self.ego_vehicle_position[0],
-                self.ego_vehicle_position[1],
-                nearest_light_position.x,
-                nearest_light_position.y
-            ) - 30.0
-
-            # Ensure the distance is not negative
-            if exact_distance < 0.0:
-                exact_distance = 0.0
+            exact_distance = self.ego_vehicle_position[1] - (-120.03)
 
             return (nearest_light_id, exact_distance)
         else:
@@ -344,10 +341,17 @@ class TrafficLightMonitor(Node):
         traffic_light_info.time_remaining = time_remaining
         self.traffic_light_in_front_pub.publish(traffic_light_info)
 
+    def clock_callback(self, msg):
+        self.sim_time_sec = msg.clock.sec
+        self.sim_time_nanosec = msg.clock.nanosec
+
+
     def log_traffic_light_info(self, light_id, state, distance, time_remaining, position):
         vehicle_x, vehicle_y = self.ego_vehicle_position
+        sim_time = self.sim_time_sec + self.sim_time_nanosec * 1e-9  # convert to float seconds
         self.get_logger().info(
-            f"🚦 Light ID: {light_id}, Distance: {distance:.2f}m, Status: {state}, "
+            f"[🕒 {sim_time:.3f} s] 🚦 Light ID: {light_id}, Distance: {distance:.2f} m, Status: {state}, "
+            #f"🚦 Light ID: {light_id}, Distance: {distance:.2f}m, Status: {state}, "
             f"Time Left: {time_remaining:.2f}s | Light Position: ({position.x:.2f}, {position.y:.2f}), "
             f"Vehicle Position: ({vehicle_x:.2f}, {vehicle_y:.2f})"
         )

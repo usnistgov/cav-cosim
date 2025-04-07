@@ -146,6 +146,7 @@ def generate_launch_description():
                 '-d', os.path.join(get_package_share_directory('carla_ad_demo'), 'config/carla_ad_demo_ros2.rviz')],
             on_exit=launch.actions.Shutdown()
         )
+
     ])
     return ld
 
