@@ -1,8 +1,14 @@
-# V2I Communication Example for ns-3
+# V2I Communication Example
 
-##  File Included
+##  File Included and implementation
 
-- `ns3_gateway_v2i.cc`: This C++ source file demonstrates a basic V2I communication scenario using `ns-3`, where a traffic light broadcasts messages to a vehicle. The vehicle receives these messages and processes them using an external mobility model.
+- `send_data_from_carla.py`: Sends real-time vehicle telemetry (position, velocity, etc.) over TCP
+- `intermediate_server.py`: Forwards vehicle data to ns-3 and receives broadcast result (e.g., from traffic light); then sends the result to MATLAB
+- `ns3_gateway_v2i.cc`: Simulates network behavior: traffic light broadcasts, vehicles receive
+- `receive_ns3_data_matlab.m`: 	Receives and processes the response data from ns-3 for decision making
+
+![V2I Co-simulation with CARLA, ns-3, and MATLAB](docs/implementation.png)
+
 
 ##  How to use
 
