@@ -1,3 +1,34 @@
+"""/*
+ * NIST-developed software is provided by NIST as a public service. You may use,
+ * copy, and distribute copies of the software in any medium, provided that you
+ * keep intact this entire notice. You may improve, modify, and create
+ * derivative works of the software or any portion of the software, and you may
+ * copy and distribute such modifications or works. Modified works should carry
+ * a notice stating that you changed the software and should note the date and
+ * nature of any such change. Please explicitly acknowledge the National
+ * Institute of Standards and Technology as the source of the software. 
+ *
+ * NIST-developed software is expressly provided "AS IS." NIST MAKES NO WARRANTY
+ * OF ANY KIND, EXPRESS, IMPLIED, IN FACT, OR ARISING BY OPERATION OF LAW,
+ * INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTY OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND DATA ACCURACY. NIST
+ * NEITHER REPRESENTS NOR WARRANTS THAT THE OPERATION OF THE SOFTWARE WILL BE
+ * UNINTERRUPTED OR ERROR-FREE, OR THAT ANY DEFECTS WILL BE CORRECTED. NIST DOES
+ * NOT WARRANT OR MAKE ANY REPRESENTATIONS REGARDING THE USE OF THE SOFTWARE OR
+ * THE RESULTS THEREOF, INCLUDING BUT NOT LIMITED TO THE CORRECTNESS, ACCURACY,
+ * RELIABILITY, OR USEFULNESS OF THE SOFTWARE.
+ * 
+ * You are solely responsible for determining the appropriateness of using and
+ * distributing the software and you assume all risks associated with its use,
+ * including but not limited to the risks and costs of program errors,
+ * compliance with applicable laws, damage to or loss of data, programs or
+ * equipment, and the unavailability or interruption of operation. This software 
+ * is not intended to be used in any situation where a failure could cause risk
+ * of injury or damage to property. The software developed by NIST employees is
+ * not subject to copyright protection within the United States.
+ *
+ * Author: Hadhoum Hajjaj <hadhoum.hajjaj@nist.gov>
+*/"""
 import rclpy
 from rclpy.node import Node
 from carla_msgs.msg import CarlaTrafficLightInfoList, CarlaTrafficLightStatusList, TrafficLightInfo
@@ -6,7 +37,7 @@ import math
 import carla
 from transitions import Machine
 from rosgraph_msgs.msg import Clock
-
+import socket
 
 
 class TrafficLightMonitor(Node):
@@ -16,13 +47,22 @@ class TrafficLightMonitor(Node):
 
     def __init__(self):
         super().__init__("traffic_light_monitor")
-
+        
+        # ROS2 Variables
         self.traffic_lights = {}
         self.traffic_light_status = {}
         self.ego_vehicle_position = None
         self.ego_vehicle_orientation = None
+        self.vehicle_velocity = (0.0, 0.0, 0.0)
+        self.sim_time_sec = 0
+        self.sim_time_nanosec = 0
+        self.previous_state = "Red"
+        self.nearest_traffic_light_id = None
 
-
+        # TCP socket connection to intermediate server
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect(('localhost', 7000))
+        self.get_logger().info("✅ Connected to intermediate server on port 7000")
 
         # Connect to CARLA
         self.client = carla.Client('localhost', 2000)
@@ -39,11 +79,6 @@ class TrafficLightMonitor(Node):
         self.machine.add_transition("turn_yellow", "Green", "Yellow")
         self.machine.add_transition("turn_red", "Yellow", "Red")
 
-
-        # Nearest Traffic Light Tracking
-        self.nearest_traffic_light_id = None
-        self.previous_state = "Red"
-
         # ROS2 Subscriptions
         self.create_subscription(CarlaTrafficLightInfoList, "/carla/traffic_lights/info", self.info_callback, 10)
         self.create_subscription(CarlaTrafficLightStatusList, "/carla/traffic_lights/status", self.status_callback, 10)
@@ -51,7 +86,7 @@ class TrafficLightMonitor(Node):
         self.create_subscription(Clock, '/clock', self.clock_callback, 10)
 
 
-        # Timer to log nearest traffic light every 0.1s
+        # Timer to Process Traffic LIght
         self.timer = self.create_timer(0.1, self.process_nearest_traffic_light)
         self.get_logger().info("🚦 TrafficLightMonitor Node Initialized!")
 
@@ -75,10 +110,12 @@ class TrafficLightMonitor(Node):
             self.traffic_light_status[light.id] = light.state
 
     def odometry_callback(self, msg):
-        """ Updates ego vehicle position and orientation """
-        position = msg.pose.pose.position
+        pos = msg.pose.pose.position
+        vel = msg.twist.twist.linear
+        self.ego_vehicle_position = (pos.x, pos.y)
+        self.vehicle_velocity = (vel.x, vel.y, vel.z)
+
         orientation = msg.pose.pose.orientation
-        self.ego_vehicle_position = (position.x, position.y)
         self.ego_vehicle_orientation = math.atan2(
             2.0 * (orientation.w * orientation.z + orientation.x * orientation.y),
             1.0 - 2.0 * (orientation.y**2 + orientation.z**2)
@@ -108,7 +145,8 @@ class TrafficLightMonitor(Node):
         red_duration = self.calculate_red_light_duration(traffic_light_actor)
         time_remaining = self.calculate_light_remaining_time(state, elapsed_time, traffic_light_actor, red_duration, reset_red_timer)
         self.log_traffic_light_info(light_id, state, distance_to_light, time_remaining, traffic_light_actor.get_transform().location)
-        self.publish_traffic_light_info(light_id, state, distance_to_light, time_remaining)
+        self.publish_traffic_light_info(light_id, state, distance_to_light, time_remaining, traffic_light_actor.get_transform().location)
+
 
     def find_nearest_traffic_light(self):
         """Find the traffic light that impact the vehicle. Return its id and the distance to its stop line."""
@@ -333,13 +371,41 @@ class TrafficLightMonitor(Node):
             total_distance += distance
         return total_distance / len(waypoints) if waypoints else float('inf')
 
-    def publish_traffic_light_info(self, light_id, state, distance, time_remaining):
-        traffic_light_info = TrafficLightInfo()
-        traffic_light_info.id = light_id
-        traffic_light_info.distance = distance
-        traffic_light_info.status = str(state)
-        traffic_light_info.time_remaining = time_remaining
-        self.traffic_light_in_front_pub.publish(traffic_light_info)
+    def publish_traffic_light_info(self, light_id, state, distance, time_remaining, position):
+        msg = TrafficLightInfo()
+        msg.id = light_id
+        msg.distance = distance
+        msg.status = str(state)
+        msg.time_remaining = time_remaining
+        self.traffic_light_in_front_pub.publish(msg)
+
+        # === Send over TCP to intermediate server ===
+        vx, vy, vz = self.vehicle_velocity
+        x, y = self.ego_vehicle_position
+        z = 0.0  # dummy if needed
+        send_flag = 0
+
+        if 'Red' in str(state):
+            state_code = 3
+        elif 'Yellow' in str(state):
+            state_code = 2
+        elif 'Green' in str(state):
+            state_code = 1
+        else:
+            state_code = -1
+
+        tcp_message = f"{self.sim_time_sec},{self.sim_time_nanosec},{x:.2f},{y:.2f},{z:.2f},{vx:.2f},{vy:.2f},{vz:.2f},{send_flag},{state_code},{time_remaining:.2f};"
+        try:
+            self.sock.sendall(tcp_message.encode())
+            self.get_logger().info(f"📤 Sent: {tcp_message}")
+        except Exception as e:
+            self.get_logger().error(f"❌ TCP send failed: {e}")
+
+    def destroy_node(self):
+        self.sock.close()
+        self.get_logger().info("✅ Closed TCP connection")
+        super().destroy_node()
+
 
     def clock_callback(self, msg):
         self.sim_time_sec = msg.clock.sec
@@ -364,7 +430,7 @@ def main(args=None):
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
-        node.get_logger().info("Shutting down TrafficLightMonitor Node.")
+        node.get_logger().info("Shutting down...")
     finally:
         node.destroy_node()
         rclpy.shutdown()

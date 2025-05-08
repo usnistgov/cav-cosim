@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'traffic_light_monitor = carla_traffic_monitor.traffic_light_monitor:main',
+            'traffic_light_sender = carla_traffic_monitor.ros2_ns3_tcp_sender:main',
         ],
     },
 )
