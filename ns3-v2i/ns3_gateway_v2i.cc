@@ -28,24 +28,28 @@
  * not subject to copyright protection within the United States.
  *
  * Author: Thomas Roth <thomas.roth@nist.gov>
- * Modified by Hadhoum Hajjaj <hadhoum.hajjaj@nist.gov> to include V2I communication by adding a traffic light broadcaster
+ * Modified by Hadhoum Hajjaj <hadhoum.hajjaj@nist.gov> to include V2I communication using wifi 
 */
-
 #include <string>
 #include <vector>
 
 #include "ns3/applications-module.h"
 #include "ns3/core-module.h"
-#include "ns3/csma-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/mobility-module.h"
 #include "ns3/network-module.h"
+#include "ns3/wifi-module.h"
+#include "ns3/yans-wifi-helper.h"
 
 #include "ns3/external-mobility-model.h"
 #include "ns3/triggered-send-application.h"
 #include "ns3/triggered-send-helper.h"
-
 #include "ns3/gateway.h"
+#include "ns3/seq-ts-size-header.h"
+
+#include <iomanip>
+
+
 
 using namespace ns3;
 
@@ -68,40 +72,59 @@ NS_LOG_COMPONENT_DEFINE("SimpleGateway");
  *
  * A response is sent each time data is received.
  */
-class SimpleGateway : public Gateway
+class SimpleGateway : public Gateway 
 {
 public:
         // initialize a simple gateway where n = vehicles.GetN()
     SimpleGateway(NodeContainer vehicles);
+    void HandleReceiveWithTs(std::string id, Ptr<const Packet> packet,
+                             const Address &from, const Address &to,
+                             const SeqTsSizeHeader &header);
 
-        // this function handles receiving broadcast messages from ns-3 (not the remote server)
-        //  id indicates the vehicle index that received the message; the other arguments are ignored
-    void HandleReceive(std::string id, Ptr<const Packet> packet, const Address &clientAddress);
 private:
         // this function handles processing the first message received from the remote server
         //  the simple gateway doesn't require any initialization, so this just calls DoUpdate
-        virtual void DoInitialize(const std::vector<std::string> & data);
+    virtual void DoInitialize(const std::vector<std::string> & data);
 
         // this function handles processing messages received from the remote server
-        virtual void DoUpdate(const std::vector<std::string> & data);
+    virtual void DoUpdate(const std::vector<std::string> & data);
 
-        NodeContainer m_vehicles;       // the nodes representing vehicles that are managed by the gateway
-        std::vector<uint16_t> m_count;  // the number of times each vehicle has received a broadcast
+    NodeContainer m_vehicles;
+    std::vector<Time> m_lastRecvTime;
+    std::vector<int> m_lastLightStatus;
+    std::vector<float> m_lastTimeRemaining;
+    Vector m_trafficLightPosition;
+
 };
 
-SimpleGateway::SimpleGateway(NodeContainer vehicles):
-    Gateway(vehicles.GetN()),
-    m_vehicles(vehicles),
-    m_count(vehicles.GetN(), 0)
+SimpleGateway::SimpleGateway(NodeContainer vehicles)
+    : Gateway(vehicles.GetN()),
+      m_vehicles(vehicles),
+      m_lastRecvTime(vehicles.GetN(), Seconds(0)),
+      m_lastLightStatus(vehicles.GetN(), 0),
+      m_lastTimeRemaining(vehicles.GetN(), 0.0f)
 {
-    // do nothing
+    // Traffic light is the node after the last vehicle node
+    Ptr<Node> trafficLightNode = NodeList::GetNode(m_vehicles.GetN()); 
+    Ptr<MobilityModel> tlMobility = trafficLightNode->GetObject<MobilityModel>();
+    m_trafficLightPosition = tlMobility->GetPosition();
 }
 
-void SimpleGateway::HandleReceive(std::string id, Ptr<const Packet> packet, const Address &clientAddress)
+
+
+void SimpleGateway::HandleReceiveWithTs(std::string id, Ptr<const Packet> packet,
+    const Address &from, const Address &to,
+    const SeqTsSizeHeader &header)
 {
-    NS_LOG_INFO("At time " << Simulator::Now().As(Time::S) << ", Node " << id << " received a broadcast");
-    m_count.at(std::stoi(id)) += 1;
+    Time txTime = header.GetTs();
+    NS_LOG_INFO("At time " << Simulator::Now().As(Time::S)
+    << ", Node " << id << " received a packet (sent at "
+    << txTime.As(Time::S) << ")");
+    uint32_t index = std::stoi(id);
+    //m_count[index] += 1;
+    m_lastRecvTime[index] = txTime; // store for reporting later
 }
+
 
 void SimpleGateway::DoInitialize(const std::vector<std::string> &data)
 {
@@ -110,36 +133,72 @@ void SimpleGateway::DoInitialize(const std::vector<std::string> &data)
 
 void SimpleGateway::DoUpdate(const std::vector<std::string> &data)
 {
-    NS_LOG_FUNCTION(this << data);
+    static Time lastUpdate = Seconds(0);
+    Time now = Simulator::Now();
+    Time delta = now - lastUpdate;
 
-    static const uint32_t ELEMENTS_PER_VEHICLE = 7; // Position_{x,y,z} + Velocity_{x,y,z} + SendFlag
+    NS_LOG_INFO(">>> [ns-3] DoUpdate at " << now.GetSeconds() << " s, Δt = " << delta.GetSeconds() << " s");
 
-    for (uint32_t i = 0; i < m_vehicles.GetN(); i++)
+    lastUpdate = now;
+
+    static const uint32_t ELEMENTS_PER_VEHICLE = 9; // Position_{x,y,z} + Velocity_{x,y,z} + SendFlag + LightStatus + TimeRemaining
+
+    for (uint32_t i = 0; i < m_vehicles.GetN(); i++) 
     {
         Ptr<Node> vehicle = m_vehicles.Get(i);
         uint32_t dataIndex = i * ELEMENTS_PER_VEHICLE;
 
-        if (dataIndex + ELEMENTS_PER_VEHICLE > data.size())
+        if (dataIndex + ELEMENTS_PER_VEHICLE > data.size()) 
         {
             NS_FATAL_ERROR("ERROR: received data has insufficient size");
         }
 
-        Vector position(std::stof(data[dataIndex]), std::stof(data[dataIndex + 1]), std::stof(data[dataIndex + 2]));
+        Vector position(std::stof(data[dataIndex]), std::stof(data[dataIndex + 1]), std::stof(data[dataIndex + 2]));        
         vehicle->GetObject<ExternalMobilityModel>()->SetPosition(position);
 
         Vector velocity(std::stof(data[dataIndex + 3]), std::stof(data[dataIndex + 4]), std::stof(data[dataIndex + 5]));
         vehicle->GetObject<ExternalMobilityModel>()->SetVelocity(velocity);
 
+        int light_status = std::stoi(data[dataIndex + 7]);
+        float time_remaining = std::stof(data[dataIndex + 8]);
+
+        m_lastLightStatus[i] = light_status;
+        m_lastTimeRemaining[i] = time_remaining;
+
+
         // handle the send flag
         if (std::stoi(data[dataIndex+6]))
         {
-            // the index '0' here is because the TriggeredSendApplication is the first application installed in main
-            DynamicCast<TriggeredSendApplication>(vehicle->GetApplication(0))->Send(3); // broadcast 3 packets
+            DynamicCast<TriggeredSendApplication>(vehicle->GetApplication(0))->Send(3);
             NS_LOG_INFO("At time " << Simulator::Now().As(Time::S) << ", Node " << i << " sent a broadcast");
+            NS_LOG_INFO("Traffic Light Status: " << light_status << ", Time Remaining: " << time_remaining << "s");
         }
 
-        NS_LOG_INFO("Sending response for node " << i << ": " << m_count[i]);
-        SetValue(i, std::to_string(m_count[i])); // update the received broadcast count
+        // Respond with the last received timestamp instead of count
+
+        // SetValue(i, std::to_string(m_lastRecvTime[i].GetSeconds()));
+        std::ostringstream response;
+        response << m_lastRecvTime[i].GetSeconds() << "," 
+                 << m_lastLightStatus[i] << "," 
+                 << std::fixed << std::setprecision(2) << m_lastTimeRemaining[i] << ","
+                 << std::fixed << std::setprecision(2)
+                 << m_trafficLightPosition.x << "," 
+                 << m_trafficLightPosition.y << "," 
+                 << m_trafficLightPosition.z;
+        SetValue(i, response.str());
+        
+        
+
+        //NS_LOG_INFO("Sending response for node " << i << ": last recv time = " << m_lastRecvTime[i].As(Time::S));
+        NS_LOG_INFO("Sending response for node " << i
+            << ": time = " << m_lastRecvTime[i].As(Time::S)
+            << ", state = " << m_lastLightStatus[i]
+            << ", remaining = " << m_lastTimeRemaining[i] << "s"
+            << ", lightPos = (" << m_trafficLightPosition.x
+            << ", " << m_trafficLightPosition.y
+            << ", " << m_trafficLightPosition.z << ")");
+        
+
     }
     SendResponse(); // format and send a response based on the most recent SetValue
 }
@@ -172,7 +231,6 @@ int main(int argc, char *argv[])
     {
         LogComponentEnable("Gateway", LOG_LEVEL_INFO);
         LogComponentEnable("SimpleGateway", LOG_LEVEL_ALL);
-        // Enable logging for PacketSink (receiver) and OnOffApplication (broadcaster) to debug V2I messages
         LogComponentEnable("PacketSink", LOG_LEVEL_INFO);
         LogComponentEnable("OnOffApplication", LOG_LEVEL_INFO);
     }
@@ -181,15 +239,11 @@ int main(int argc, char *argv[])
         LogComponentEnable("Gateway", LOG_LEVEL_INFO);
         LogComponentEnable("SimpleGateway", LOG_LEVEL_INFO);
     }
-    
-    // Create total nodes: numberOfVehicles + 1 traffic light node for V2I communication
 
-    uint16_t totalNodes = numberOfVehicles + 1; // +1 for traffic light
+    uint16_t totalNodes = numberOfVehicles + 1;
     NodeContainer nodes;
     nodes.Create(totalNodes);
-    NS_LOG_DEBUG("Creating " << numberOfVehicles << " vehicle node(s) and 1 traffic light node (total: " << totalNodes << ")");
 
-    // generate a list of initial positions for the mobility models
     Ptr<ListPositionAllocator> positionAllocator = CreateObject<ListPositionAllocator>();
     for (uint16_t i = 0; i < numberOfVehicles; i++)
     {
@@ -217,32 +271,35 @@ int main(int argc, char *argv[])
     mobility.SetMobilityModel("ns3::ExternalMobilityModel");
     mobility.SetPositionAllocator(positionAllocator);
     for (uint16_t i = 0; i < numberOfVehicles; i++)
-    {
         mobility.Install(nodes.Get(i));
-    }
-
-    // === Traffic Light Mobility Setup ===
-    // We previously created (numberOfVehicles + 1) nodes:
-    //    - nodes[0] to nodes[numberOfVehicles - 1] are the vehicles
-    //    - nodes[numberOfVehicles] is the traffic light
-    //
-    // The traffic light should remain stationary, so we apply the
-    // "ns3::ConstantPositionMobilityModel", which keeps its position fixed.
-    //
-    // We use nodes.Get(numberOfVehicles) to access the traffic light node,
-    // because it's the last node created (after all the vehicles).
-    //
-    // This ensures the traffic light does not move during the simulation.
     mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
-    mobility.Install(nodes.Get(numberOfVehicles)); // traffic light node
+    mobility.Install(nodes.Get(numberOfVehicles));
 
-    CsmaHelper csma;
-    csma.SetChannelAttribute("DataRate", StringValue("100Mbps"));
-   
-    // Install a CSMA (Ethernet-like) channel on all nodes.
-    // This includes both the vehicle(s) and the traffic light,
-    // since both need to be connected to the same network for V2I communication.
-    NetDeviceContainer devices = csma.Install(nodes);
+    WifiHelper wifi;
+    wifi.SetStandard(WIFI_STANDARD_80211b);
+    wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager",
+                                 "DataMode", StringValue("DsssRate1Mbps"),
+                                 "ControlMode", StringValue("DsssRate1Mbps"));
+
+    YansWifiPhyHelper wifiPhy;
+    wifiPhy.Set("TxPowerStart", DoubleValue(20.0));
+    wifiPhy.Set("TxPowerEnd", DoubleValue(20.0));
+    wifiPhy.Set("RxSensitivity", DoubleValue(-95.0));
+    wifiPhy.Set("CcaEdThreshold", DoubleValue(-95.0));
+
+    YansWifiChannelHelper wifiChannel = YansWifiChannelHelper::Default();
+    wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
+
+    // Easier propagation (Exponent lowered)
+    // wifiChannel.AddPropagationLoss("ns3::LogDistancePropagationLossModel", "Exponent", DoubleValue(2.0));
+    // Commented out fading
+    // wifiChannel.AddPropagationLoss("ns3::NakagamiPropagationLossModel");
+
+    wifiPhy.SetChannel(wifiChannel.Create());
+
+    WifiMacHelper wifiMac;
+    wifiMac.SetType("ns3::AdhocWifiMac");
+    NetDeviceContainer devices = wifi.Install(wifiPhy, wifiMac, nodes);
 
     // install an IP network stack
     InternetStackHelper stack;
@@ -256,6 +313,7 @@ int main(int argc, char *argv[])
     address.SetBase("192.168.1.0", "255.255.255.0");
     Ipv4InterfaceContainer interfaces = address.Assign(devices);
 
+    //const Ipv4Address broadcastAddress("255.255.255.255");
     const Ipv4Address broadcastAddress("192.168.1.255");
     const uint16_t applicationPort = 8100;
 
@@ -272,34 +330,47 @@ int main(int argc, char *argv[])
     for (uint32_t i = 0; i < numberOfVehicles; i++)
     {
         Ptr<Node> vehicle = nodes.Get(i);
-        // call ReportMobility when the external mobility model reports a CourseChange
         Ptr<ExternalMobilityModel> mobilityModel = vehicle->GetObject<ExternalMobilityModel>();
         mobilityModel->TraceConnectWithoutContext("CourseChange", MakeCallback(&ReportMobility));
 
-        // install a triggered send application that can be triggered to broadcast messages to the bus
         TriggeredSendHelper sendHelper("ns3::UdpSocketFactory", InetSocketAddress(broadcastAddress, applicationPort));
         sendHelper.SetAttribute("PacketInterval", TimeValue(MilliSeconds(100)));
         ApplicationContainer clientApps = sendHelper.Install(vehicle);
         clientApps.Start(Time(0));
 
-        // install a packet sink that calls HandleReceive when it receives a broadcasted message
         PacketSinkHelper sinkHelper("ns3::UdpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), applicationPort));
+        sinkHelper.SetAttribute("EnableSeqTsSizeHeader", BooleanValue(true));
         ApplicationContainer serverApps = sinkHelper.Install(vehicle);
-        serverApps.Get(0)->TraceConnect("Rx", std::to_string(i), MakeCallback(&SimpleGateway::HandleReceive, &gateway));
+
+        serverApps.Get(0)->TraceConnect("RxWithSeqTsSize", std::to_string(i), MakeCallback(&SimpleGateway::HandleReceiveWithTs, &gateway));
         serverApps.Start(Time(0));
     }
 
     // === Traffic light broadcasts ===
     Ptr<Node> trafficLight = nodes.Get(numberOfVehicles);
     OnOffHelper onoff("ns3::UdpSocketFactory", InetSocketAddress(broadcastAddress, applicationPort));
+
+    // Configure the OnOff application to transmit SPaT messages at 10 Hz:
+    // - PacketSize = 100 bytes (800 bits)
+    // - DataRate = 8 kbps => 8000 bits/sec ÷ 800 bits = 10 packets/sec
+    // - OnTime = 1.0s and OffTime = 0.0s ensure continuous transmission without idle periods
+
+    onoff.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));
+    onoff.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.0]"));
     onoff.SetAttribute("PacketSize", UintegerValue(100));
-    onoff.SetAttribute("DataRate", StringValue("1kbps"));
+    onoff.SetAttribute("DataRate", StringValue("8kbps"));
+    onoff.SetAttribute("EnableSeqTsSizeHeader", BooleanValue(true));
     onoff.SetAttribute("StartTime", TimeValue(Seconds(1.0)));
-    onoff.SetAttribute("StopTime", TimeValue(Seconds(30.0)));
+
     onoff.Install(trafficLight);
 
-    // Gateway connects to intermidiate server
     gateway.Connect(serverAddress, serverPort);
+
+    // Optional: Enable trace for packet visualization
+    AsciiTraceHelper ascii;
+    wifiPhy.EnableAsciiAll(ascii.CreateFileStream("wifi-trace.tr"));
+
+
 
     Simulator::Run();
     Simulator::Destroy();
