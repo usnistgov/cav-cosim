@@ -1,15 +1,11 @@
 
-To be updated
-
 
 # V2I Communication Example
 
 ##  File Included and implementation
 
-- `send_data_from_carla.py`: Sends real-time vehicle telemetry (position, velocity, etc.) over TCP
 - `intermediate_server.py`: Forwards vehicle data to ns-3 and receives broadcast result (e.g., from traffic light); then sends the result to MATLAB
 - `ns3_gateway_v2i.cc`: Simulates network behavior: traffic light broadcasts, vehicles receive
-- `receive_ns3_data_matlab.m`: 	Receives and processes the response data from ns-3 for decision making
 
 ![V2I Co-simulation with CARLA, ns-3, and MATLAB](docs/implementation.png)
 
@@ -40,19 +36,14 @@ To be updated
    pyhton3 /path/to/intermediate_server.py
    ```
 
-
-4. Run Matlab /path/to/receive_ns3_data_matlab.m
-5. Run ns3:
+4. Run ns3:
 
    ```bash
    cd /path/to/ns3_cosim
    ./ns3 run "ns3_gateway_v2i --verbose"
    ```
 
-6. Run the carla data sender
-
-   ```bash
-   pyhton3 /path/to/send_data_from_carla.py
-   ```
+5. Run ROS2 light monitor package
+6. Run ROS2 ad_demo package
 
 
