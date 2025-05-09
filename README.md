@@ -1,7 +1,8 @@
 ## 1. Software
   - MATLAB/Simulink Version: R2024b
   - OS: Ubuntu 22.04
-  - ROS 2 Distribution: Humble
+  - ROS2 Distribution: Humble
+  - NS3
 
 ## 2. Before You Begin
 1. **CARLA:**
@@ -42,28 +43,37 @@
     cd ~/Workspace/carla-matlab-demo/carla_ros_bridge
     colcon build --symlink-install
     ```
+4. **Build NS3:**
+    Please follow the instructions provided in the [ns3-cosim repository](https://github.com/usnistgov/ns3-cosim.git) and in the [`ns3-v2i` folder](./ns3-v2i) of this repository.
 
 ## 4. How to Run the Demo
-You will require 3 Linux Terminals to run this demo:
+You will require 5 Linux Terminals to run this demo:
 
 1. **Terminal 01: Start CARLA Server**
     ```sh
     sh $CARLA_ROOT/CarlaUE4.sh -RenderOffScreen
     ```
-2. **Terminal 02: Start Matlab**
+2. **Terminal 03: Run inetermediate server**
+   ```bash
+   pyhton3 /path/to/intermediate_server.py
    ```
-   /usr/local/MATLAB/R2024b/bin/matlab -softwareopengl
+   
+3. **Terminal 04: Run ns3**
+   ```bash
+   cd /path/to/ns3_cosim
+   ./ns3 run "ns3_gateway_v2i --verbose"
    ```
-3. **Terminal 03: Launch `carla_traffic_monitor` package**
+	
+4. **Terminal 05: Launch `carla_traffic_monitor` package**
    ```
    ros2 run carla_traffic_monitor traffic_light_monitor
    ```
-4. **Terminal 04: Launch `carla_ad_demo` node**
+5. **Terminal 06: Launch `carla_ad_demo` node**
     ```sh
     ros2 launch carla_ad_demo carla_matlab_demo_traffic_light.launch.py
     ```
-5. **In matlab**
+6. **In matlab**
     - Run setup_carla_msgs_in_simulink.m
-    - Run startSimulinkModel.m
+    - Open and run Traffic_Light_ROS2_NS3_demo.slx
 
 
