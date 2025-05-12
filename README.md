@@ -92,7 +92,7 @@ You will require 5 Linux Terminals to run this demo:
     - Run setup_carla_msgs_in_simulink.m
     - Open and run Traffic_Light_ROS2_NS3_demo.slx
 
-## 4. Third-Party Licenses
+## 5. Third-Party Licenses
 
 **carla-ros-bridge**
 
