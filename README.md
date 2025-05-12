@@ -28,15 +28,15 @@
 3. **Matlab/Simulink:**
   - Download and install Matlab 2024b from [MathWorks](https://www.mathworks.com/help/install/ug/install-products-with-internet-connection.html).
   
-4. **NS3**
- Clone `ns3-cosim` repository:
+4. **NS3:**
+  - Clone `ns3-cosim` repository:
 
-   ```bash
+   ```sh
    git clone https://github.com/usnistgov/ns3-cosim.git
    cd ns3-cosim
    ```
- Copy ns3_gateway_v2i from this repo to examples/ folder in ns3-cosim repo
-   ```bash
+  - Copy ns3_gateway_v2i from this repo to examples/ folder in ns3-cosim repo
+   ```sh
    cp /path/to/ns3_gateway_v2i.cc examples/
    ```
    
