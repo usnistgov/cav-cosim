@@ -31,14 +31,14 @@
 4. **NS3:**
   - Clone `ns3-cosim` repository:
 
-   ```sh
-   git clone https://github.com/usnistgov/ns3-cosim.git
-   cd ns3-cosim
-   ```
+    ```sh
+    git clone https://github.com/usnistgov/ns3-cosim.git
+    cd ns3-cosim
+    ```
   - Copy ns3_gateway_v2i from this repo to examples/ folder in ns3-cosim repo
-   ```sh
-   cp /path/to/ns3_gateway_v2i.cc examples/
-   ```
+    ```sh
+    cp /path/to/ns3_gateway_v2i.cc examples/
+    ```
    
    Follow the build instructions provided in the `ns3-cosim` GitHub repository to compile this example.
     
