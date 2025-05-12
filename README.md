@@ -109,9 +109,9 @@ You will require 3 Linux Terminals to run this demo:
 ## 5. Contact Information
 
 - **Principal Investigator:** 
-  - Name: Thomas Roth
+  - Name: Hadhoum Hajjaj
   - Division and Group Names: Communication Technology Laboratory/Smart Connected Systems Division/IoT Devices and Infrastructures Group
-  - Email: thomas.roth@nist.gov
+  - Email: hadhoum.hajjaj@nist.gov
 
 ## 6. Related Material
 
