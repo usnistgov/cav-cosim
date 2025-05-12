@@ -1,3 +1,5 @@
+![V2I Co-simulation with CARLA, ns-3, and MATLAB](ns3-v2i/docs/implementation.png)
+
 ## 1. Software
   - MATLAB/Simulink Version: R2024b
   - OS: Ubuntu 22.04
@@ -25,6 +27,20 @@
     
 3. **Matlab/Simulink:**
   - Download and install Matlab 2024b from [MathWorks](https://www.mathworks.com/help/install/ug/install-products-with-internet-connection.html).
+  
+4. **NS3**
+ Clone `ns3-cosim` repository:
+
+   ```bash
+   git clone https://github.com/usnistgov/ns3-cosim.git
+   cd ns3-cosim
+   ```
+ Copy ns3_gateway_v2i from this repo to examples/ folder in ns3-cosim repo
+   ```bash
+   cp /path/to/ns3_gateway_v2i.cc examples/
+   ```
+   
+   Follow the build instructions provided in the `ns3-cosim` GitHub repository to compile this example.
     
 ## 3. Configuration
 1. **Set up a project directory and clone the carla-ros-bridge repository:**
