@@ -30,7 +30,7 @@
 %  * Author: Hadhoum Hajjaj <hadhoum.hajjaj@nist.gov>
 % */
 % Define the path to the custom message folder
-customMsgFolder = fullfile('~/cosim/carla_ros_bridge/install/carla_msgs/share');
+customMsgFolder = fullfile('~/iotav/cosim/carla_ros_bridge/install/carla_msgs/share');
 
 % Generate custom messages for ROS 2
 ros2genmsg(customMsgFolder);

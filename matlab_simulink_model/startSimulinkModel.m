@@ -31,9 +31,9 @@
 % */
 clear; close all; clc;
 
-model_name = 'Traffic_Light_ROS2_demo';
+model_name = 'Traffic_Light_ROS2_NS3_demo';
 % Set Variant Condition (AFTER Model is Loaded)
-BRAKING_MODE = 1;  % 1 = Perception-Based, 2 = Communication-Based
+BRAKING_MODE = 2;  % 1 = Perception-Based, 2 = Communication-Based
 set_param([model_name,'/Controller/Braking_Controller'], 'VariantControl', 'BRAKING_MODE');
 
 % Preload and compile Simulink model
