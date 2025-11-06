@@ -162,6 +162,25 @@ def generate_launch_description():
                 'role_name': launch.substitutions.LaunchConfiguration('role_name')
             }.items()
         ),
+        # Carla Twist to Control
+        launch_ros.actions.Node(
+            package='carla_twist_to_control',
+            executable='carla_twist_to_control',
+            name='carla_twist_to_control',
+            #remappings=[
+            #    (
+            #        ["/carla/",
+            #            launch.substitutions.LaunchConfiguration('role_name'), "/vehicle_control_cmd"],
+            #        ["/carla/",
+            #            launch.substitutions.LaunchConfiguration('role_name'), "/vehicle_control_cmd_manual"]
+            #    )
+            #],
+            parameters=[
+                {
+                    'role_name': launch.substitutions.LaunchConfiguration('role_name')
+                }
+            ]
+        ),
         # RViz2 Node
         launch_ros.actions.Node(
             package='rviz2',

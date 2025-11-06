@@ -69,26 +69,18 @@ You will require 5 Linux Terminals to run this demo:
     ```sh
     sh $CARLA_ROOT/CarlaUE4.sh -RenderOffScreen
     ```
-2. **Terminal 03: Run inetermediate server**
+2. **Terminal 02: Run co-simulation**
    ```bash
-   pyhton3 /path/to/intermediate_server.py
+   sh /path/to/run_cosim.sh
    ```
    
-3. **Terminal 04: Run ns3**
+3. **Terminal 03: Run controller**
    ```bash
-   cd /path/to/ns3_cosim
-   ./ns3 run "ns3_gateway_v2i --verbose"
+   cd /path/to/Python_controller
+   python3 python_controller_v1.py
    ```
 	
-4. **Terminal 05: Launch `carla_traffic_monitor` package**
-   ```
-   ros2 run carla_traffic_monitor traffic_light_monitor
-   ```
-5. **Terminal 06: Launch `carla_ad_demo` node**
-    ```sh
-    ros2 launch carla_ad_demo carla_matlab_demo_traffic_light.launch.py
-    ```
-6. **In matlab**
+4. **In matlab** ==> if you want to use matlab/simulink as a controller
     - Run setup_carla_msgs_in_simulink.m
     - Open and run Traffic_Light_ROS2_NS3_demo.slx
 

@@ -140,9 +140,11 @@ try:
                     tl_z = float(parts[5])
 
 
-                    formatted = f"{recv_time:.4f},{light_status},{time_remain:05.2f},{tl_x:.2f},{tl_y:.2f},{tl_z:.2f}\n"
+                    formatted = f"{recv_time:08.4f},{light_status},{time_remain:05.2f},{tl_x:.2f},{tl_y:.2f},{tl_z:.2f}\n"
 
                     matlab_sock.sendall(formatted.encode())
+                    #time.sleep(0.1)  # Send at 100Hz, match Simulink's 0.001s step
+
                     print(f"[Intermediate] Sent to MATLAB: {formatted.strip()}")
                     # time.sleep(0.1)  # Sleep 10 ms (adjust based on how fast you send)
 

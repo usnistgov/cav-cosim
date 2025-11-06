@@ -28,8 +28,8 @@ class TwistToVehicleControl(CompatibleNode):  # pylint: disable=too-few-public-m
     use max wheel steer angle
     """
 
-    MAX_LON_ACCELERATION = 10
-
+    MAX_LON_ACCELERATION = 3
+    MAX_LON_DECELERATION = 9.81
     def __init__(self):
         """
         Constructor
@@ -80,26 +80,32 @@ class TwistToVehicleControl(CompatibleNode):  # pylint: disable=too-few-public-m
             return
 
         control = CarlaEgoVehicleControl()
-        if twist == Twist():
-            # stop
-            control.throttle = 0.
-            control.brake = 1.
-            control.steer = 0.
-        else:
-            if twist.linear.x > 0:
-                control.throttle = min(TwistToVehicleControl.MAX_LON_ACCELERATION,
-                                       twist.linear.x) / TwistToVehicleControl.MAX_LON_ACCELERATION
-            else:
-                control.reverse = True
-                control.throttle = max(-TwistToVehicleControl.MAX_LON_ACCELERATION,
-                                       twist.linear.x) / -TwistToVehicleControl.MAX_LON_ACCELERATION
 
-            if twist.angular.z > 0:
-                control.steer = -min(self.max_steering_angle, twist.angular.z) / \
-                    self.max_steering_angle
-            else:
-                control.steer = -max(-self.max_steering_angle, twist.angular.z) / \
-                    self.max_steering_angle
+        # Map longitudinal acceleration to throttle/brake (no reverse on decel)
+        ax = twist.linear.x if twist is not None else 0.0
+
+        if ax > 0.0:
+            control.throttle = min(TwistToVehicleControl.MAX_LON_ACCELERATION,
+                                   ax) / TwistToVehicleControl.MAX_LON_ACCELERATION
+            control.brake = 0.0
+            control.reverse = False
+        elif ax < 0.0:
+            control.throttle = 0.0
+            control.brake = min(TwistToVehicleControl.MAX_LON_DECELERATION,
+                                -ax) / TwistToVehicleControl.MAX_LON_DECELERATION
+            control.reverse = False
+        else:
+            control.throttle = 0.0
+            control.brake = 0.0
+            control.reverse = False
+
+        # Steering mapping remains the same
+        if twist.angular.z > 0:
+            control.steer = -min(self.max_steering_angle, twist.angular.z) / \
+                self.max_steering_angle
+        else:
+            control.steer = -max(-self.max_steering_angle, twist.angular.z) / \
+                self.max_steering_angle
         try:
             self.pub.publish(control)
         except ROSException as e:
