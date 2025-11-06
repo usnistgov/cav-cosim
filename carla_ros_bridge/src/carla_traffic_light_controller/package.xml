@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypeof="xml"?>
+<package format="3">
+  <name>carla_traffic_light_controller</name>
+  <version>1.0.0</version>
+  <description>ROS2 Traffic Light Controller for CARLA simulation with V2I communication</description>
+  
+  <maintainer email="hnh21@example.com">hnh21</maintainer>
+  
+  <license>MIT</license>
+  
+  <buildtool_depend>ament_python</buildtool_depend>
+  
+  <!-- Runtime dependencies -->
+  <depend>rclpy</depend>
+  <depend>nav_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>carla_msgs</depend>
+  <depend>rosgraph_msgs</depend>
+  
+  <!-- Test dependencies -->
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
