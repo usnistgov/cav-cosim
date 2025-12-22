@@ -1,0 +1,29 @@
+build_lib(
+    LIBNAME ns3-v2i
+    SOURCE_FILES
+        model/vehicle-object.cc
+        model/traffic-light-object.cc
+        helper/v2x-mobility-helper.cc
+        helper/v2x-sidelink-helper.cc
+        helper/v2x-wifi-helper.cc
+        helper/v2x-vehicle-helper.cc
+        helper/v2x-traffic-light-helper.cc
+    HEADER_FILES
+        model/vehicle-object.h
+        model/traffic-light-object.h
+        helper/v2x-mobility-helper.h
+        helper/v2x-sidelink-helper.h
+        helper/v2x-wifi-helper.h
+        helper/v2x-vehicle-helper.h
+        helper/v2x-traffic-light-helper.h
+    LIBRARIES_TO_LINK
+        ${libcore}
+        ${libapplications}
+        ${libmobility}
+        ${libwifi}
+        ${libcsma}
+        ${libinternet}
+        ${libnetwork}
+        ${libnr}
+        ${libns3-cosim}
+)
