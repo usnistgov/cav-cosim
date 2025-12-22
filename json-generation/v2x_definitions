@@ -1,0 +1,6 @@
+// Implicit definitions:
+// JSONObject[json-object]()(id: uint, alive: bool)
+// JSONMobilityObject[json-mobility-object](JSONObject)(pos_x: int, pos_y: int, pos_z: int, vel_x: int, vel_y: int, vel_z: int)
+
+VehicleObject['vehicle-object'](JSONMobilityObject)()
+TrafficLightObject['traffic-light-object'](JSONMobilityObject)(light_status: uint, time_remaining: float)

@@ -1,0 +1,10 @@
+# Code generation for JSON objects
+
+## Lexer/Parser generation
+
+In case the grammar changes and the parser/lexer/visitor need to be re-generated:
+
+- download ANTLR from https://www.antlr.org/download.html (e.g.  antlr-4.13.2-complete.jar)
+- generate lexer/parser for python: java -jar antlr-4.13.2-complete.jar -listener -no-visitor -Dlanguage=Python3 objects.g4
+- install the Python runtime: pip install antlr4-python3-runtime
+
