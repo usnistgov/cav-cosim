@@ -42,11 +42,17 @@ class JSONObject:
     lock = threading.Lock()
     nextid = 0
 
-    def __init__(self):
-        with JSONObject.lock:
-            self.id = JSONObject.nextid
-            JSONObject.nextid += 1
-        self.alive = True
+    def __init__(self, id=-1, alive=True):
+        if id < 0:
+            with JSONObject.lock:
+                self.id = JSONObject.nextid
+                JSONObject.nextid += 1
+        else:
+            self.id = id
+            with JSONObject.lock:
+                if JSONObject.nextid <= id:
+                    JSONObject.nextid = id + 1
+        self.alive = alive
     
     def update(self, time_period):
         pass
