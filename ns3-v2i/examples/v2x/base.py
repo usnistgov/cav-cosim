@@ -67,8 +67,8 @@ class JSONMobilityObject(JSONObject):
     JSONOBJECT_VEL_Y = "vel_y"
     JSONOBJECT_VEL_Z = "vel_z"
 
-    def __init__(self, pos_x=0, pos_y=0, pos_z=0, vel_x=0, vel_y=0, vel_z=0):
-        super().__init__()
+    def __init__(self, pos_x=0, pos_y=0, pos_z=0, vel_x=0, vel_y=0, vel_z=0, **kwargs):
+        super().__init__(**kwargs)
         self.pos_x = pos_x
         self.pos_y = pos_y
         self.pos_z = pos_z
