@@ -1,0 +1,15 @@
+# Default parameters for aeb_node_yolo.
+# Parallels carla_aeb_agent/config/aeb_params.yaml but consumes tracked
+# detections from /perception/detections (camera_lidar_perception output).
+
+aeb_node_yolo:
+  ros__parameters:
+    ego_actor_id: 0
+    cruise_speed_kmh: 40.0
+    ttc_brake: 1.5                  # TTC threshold for AEB trigger (s)
+    lane_half_width: 1.2            # path-conflict gate (m): ego_half (0.94) + ped_half (0.25) + sensor margin
+
+    min_brake_speed_mps: 1.0        # don't brake below this speed
+    min_track_frames: 3             # require persistent tracks (anti-flicker)
+    hold_after_stop_s: 2.0          # dwell time after full stop
+    detection_topic: "/perception/detections"

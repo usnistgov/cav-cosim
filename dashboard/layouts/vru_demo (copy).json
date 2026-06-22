@@ -1,0 +1,187 @@
+{
+  "configById": {
+    "Image!chase": {
+      "topic": "/dashboard/chase_image",
+      "smooth": true,
+      "synchronize": false,
+      "rotation": 0,
+      "minValue": null,
+      "maxValue": null,
+      "transformMarkers": false,
+      "calibrationTopic": "",
+      "cameraInfoTopic": "",
+      "foxglovePanelTitle": "CHASE VIEW",
+      "imageMode": {
+        "imageTopic": "/dashboard/chase_image"
+      }
+    },
+    "Image!perception": {
+      "topic": "/perception/image_debug",
+      "smooth": true,
+      "synchronize": false,
+      "rotation": 0,
+      "minValue": null,
+      "maxValue": null,
+      "transformMarkers": false,
+      "calibrationTopic": "",
+      "cameraInfoTopic": "",
+      "foxglovePanelTitle": "PERCEPTION",
+      "imageMode": {
+        "imageTopic": "/perception/image_debug"
+      }
+    },
+    "RawMessages!scenario_info": {
+      "topicPath": "/metrics/scenario_info.data",
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "expansion": "all",
+      "fontSize": 18,
+      "foxglovePanelTitle": "SCENARIO INFO"
+    },
+    "Gauge!speed": {
+      "path": "/metrics/ego_speed_kmh.data",
+      "minValue": 0,
+      "maxValue": 60,
+      "colorMap": "red-yellow-green",
+      "colorMode": "colormap",
+      "gradient": ["#00ff00", "#ff0000"],
+      "reverse": false,
+      "style": "dial",
+      "tickInterval": 0.1,
+      "showTicks": false,
+      "reverseDirection": false,
+      "foxglovePanelTitle": "EGO SPEED (km/h)"
+    },
+    "RawMessages!speed": {
+      "topicPath": "/metrics/ego_speed_kmh.data",
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "expansion": "all",
+      "fontSize": 48,
+      "foxglovePanelTitle": "EGO SPEED (km/h)"
+    },
+    "RawMessages!pedspeed": {
+      "topicPath": "/metrics/ped_speed.data",
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "expansion": "all",
+      "fontSize": 48,
+      "foxglovePanelTitle": "PED SPEED (m/s)"
+    },
+    "horizontal-bar.horizontal-bar!throttle": {
+      "topic": "/metrics/throttle",
+      "minValue": 0,
+      "maxValue": 1,
+      "color": "#1f7a1f",
+      "label": "THROTTLE",
+      "foxglovePanelTitle": "THROTTLE"
+    },
+    "horizontal-bar.horizontal-bar!brake": {
+      "topic": "/metrics/brake",
+      "minValue": 0,
+      "maxValue": 1,
+      "color": "#cc0000",
+      "label": "BRAKE",
+      "foxglovePanelTitle": "BRAKE"
+    },
+    "StateTransitions!states": {
+      "paths": [
+        {"value": "/metrics/perception_state.data", "timestampMethod": "receiveTime", "label": "PERCEPTION"},
+        {"value": "/metrics/state.data", "timestampMethod": "receiveTime", "label": "AEB"}
+      ],
+      "isSynced": true,
+      "showPoints": false,
+      "followingViewWidth": 20,
+      "foxglovePanelTitle": "STATE TIMELINE"
+    },
+    "Plot!distance_time": {
+      "paths": [
+        {"value": "/metrics/ped_distance_plot.data", "enabled": true, "timestampMethod": "receiveTime", "color": "#2196f3", "label": "ped distance (m)"}
+      ],
+      "minYValue": 0,
+      "maxYValue": 35,
+      "showLegend": false,
+      "isSynced": true,
+      "legendDisplay": "floating",
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "followingViewWidth": 20,
+      "foxglovePanelTitle": "DISTANCE TO PED (m)"
+    },
+    "Plot!speed_time": {
+      "paths": [
+        {"value": "/metrics/ego_speed_kmh.data", "enabled": true, "timestampMethod": "receiveTime", "color": "#4caf50", "label": "ego speed (km/h)"},
+        {"value": "/metrics/target_speed_kmh.data", "enabled": true, "timestampMethod": "receiveTime", "color": "#ffaa00", "label": "target speed (km/h)"}
+      ],
+      "minYValue": 0,
+      "maxYValue": 60,
+      "showLegend": true,
+      "isSynced": true,
+      "legendDisplay": "floating",
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "followingViewWidth": 20,
+      "foxglovePanelTitle": "EGO SPEED (km/h)"
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": {"speed": 1},
+  "layout": {
+    "direction": "column",
+    "first": {
+      "direction": "row",
+      "first": "Image!chase",
+      "second": {
+        "direction": "row",
+        "first": "Image!perception",
+        "second": {
+          "direction": "column",
+          "first": "RawMessages!scenario_info",
+          "second": {
+            "direction": "column",
+            "first": {
+              "direction": "row",
+              "first": "Gauge!speed",
+              "second": "RawMessages!speed",
+              "splitPercentage": 50
+            },
+            "second": {
+              "direction": "column",
+              "first": "RawMessages!pedspeed",
+              "second": {
+                "direction": "row",
+                "first": "horizontal-bar.horizontal-bar!throttle",
+                "second": "horizontal-bar.horizontal-bar!brake",
+                "splitPercentage": 50
+              },
+              "splitPercentage": 50
+            },
+            "splitPercentage": 33
+          },
+          "splitPercentage": 25
+        },
+        "splitPercentage": 46
+      },
+      "splitPercentage": 30
+    },
+    "second": {
+      "direction": "column",
+      "first": "StateTransitions!states",
+      "second": {
+        "direction": "column",
+        "first": "Plot!distance_time",
+        "second": "Plot!speed_time",
+        "splitPercentage": 50
+      },
+      "splitPercentage": 38
+    },
+    "splitPercentage": 57
+  }
+}

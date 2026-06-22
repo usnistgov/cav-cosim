@@ -1,0 +1,52 @@
+# CARLA Extension Library for OpenSCENARIO 2.0
+#
+# Declares CARLA-specific type extensions, sensor structs, and
+# simulation modifiers using the standard OSC2 extend mechanism.
+#
+# Usage: import lib.carla
+
+# --- Vehicle extensions ---
+extend vehicle:
+    blueprint: string = ""
+    role_name: string = ""
+    ros_name: string = ""
+    fallback_blueprints: string = ""
+
+# --- Person extensions ---
+extend person:
+    blueprint: string = ""
+    is_invincible: bool = false
+
+# --- Sensor structs ---
+struct carla_rgb_camera:
+    width: int = 800
+    height: int = 600
+    fov: int = 90
+    ros_name: string = "rgb"
+    x: float = 0.0
+    y: float = 0.0
+    z: float = 0.0
+    pitch: float = 0.0
+    yaw: float = 0.0
+    roll: float = 0.0
+
+struct carla_lidar:
+    channels: int = 32
+    points_per_second: int = 100000
+    rotation_frequency: int = 20
+    range: float = 50.0
+    ros_name: string = "lidar"
+    x: float = 0.0
+    y: float = 0.0
+    z: float = 2.5
+
+# --- Extension modifiers ---
+
+# BehaviorAgent control for autonomous driving
+modifier carla_behavior:
+    mode: string = "cautious"
+
+# Raw throttle control for non-agent vehicles
+modifier carla_throttle:
+    value: float = 0.5
+    keep_straight: bool = false

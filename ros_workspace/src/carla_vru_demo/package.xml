@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>carla_vru_demo</name>
+  <version>0.1.0</version>
+  <description>Bringup / launch files for the CARLA VRU safety experiments (baseline AEB and V2X AEB).</description>
+  <maintainer email="research@iotav.org">VRU Research</maintainer>
+  <license>MIT</license>
+
+  <exec_depend>carla_aeb_agent</exec_depend>
+  <exec_depend>carla_aeb_v2x_agent</exec_depend>
+  <exec_depend>carla_v2x_bridge</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

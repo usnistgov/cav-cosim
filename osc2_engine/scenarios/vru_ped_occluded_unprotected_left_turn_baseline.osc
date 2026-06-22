@@ -1,0 +1,71 @@
+import osc.standard
+import lib.carla
+
+scenario vru_unprotected_left_turn:
+    ego: vehicle with:
+        keep(it.blueprint == "vehicle.lincoln.mkz")
+        keep(it.role_name == "ego_vehicle")
+        keep(it.ros_name == "ego_vehicle")
+
+    ped: person with:
+        keep(it.blueprint == "walker.pedestrian.0020")
+        keep(it.is_invincible == false)
+
+    bus: vehicle with:
+        keep(it.blueprint == "vehicle.fuso.mitsubishi")
+        keep(it.fallback_blueprints == "vehicle.firetruck.actors,vehicle.sprinter.mercedes,vehicle.ambulance.ford,vehicle.mitsubishi.fusorosa,vehicle.carlamotors.firetruck,vehicle.mercedes.sprinter,vehicle.ford.ambulance,vehicle.carlamotors.european_hgv")
+
+    ego_camera: carla_rgb_camera with:
+        keep(it.width == 800)
+        keep(it.height == 600)
+        keep(it.fov == 90)
+        keep(it.ros_name == "rgb")
+        keep(it.x == -8.0)
+        keep(it.y == 0.0)
+        keep(it.z == 4.0)
+        keep(it.pitch == -15.0)
+
+    ego_lidar: carla_lidar with:
+        keep(it.ros_name == "lidar")
+        keep(it.z == 2.5)
+
+    sim_frequency: float = 60.0
+    traffic_lights: string = "sync_opposing"
+
+    background_vehicles: int = 0
+    background_pedestrians: int = 0
+
+    stop_distance: length = 5m
+
+    do serial:
+        setup: parallel:
+            ego.assign_position() with:
+                position(x: 105.8, y: 80.0, z: 0.5, project_to_road: true)
+            ped.assign_position() with:
+                position(x: 87.0, y: 56.0, z: 1.0)
+            bus.assign_position() with:
+                position(x: 99.4, y: -25.0, z: 0.5, project_to_road: true)
+
+        interaction: parallel:
+            ego.drive() with:
+                speed(40kph)
+                position(x: 80.0, y: 17.0)
+                carla_behavior(mode: "normal")
+
+            bus.drive() with:
+                speed(30kph)
+                position(x: 99.1, y: 55.0)
+                carla_behavior(mode: "normal")
+
+            ped.walk() with:
+                speed(3.0mps)
+                along(heading: 270deg, distance: 55m)
+
+            serial:
+                wait ego.object_distance(ped) <= 8m
+                ego.change_speed(target: 0kph)
+                wait ego.object_distance(ped) >= 10m
+                ego.drive() with:
+                    speed(40kph)
+                    position(x: 80.0, y: 17.0)
+                    carla_behavior(mode: "normal")

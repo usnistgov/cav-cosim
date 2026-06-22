@@ -1,0 +1,128 @@
+import osc.standard
+import lib.carla
+
+# ROS2-controlled version of the parked bus occlusion scenario.
+# IDENTICAL TO THE BASELINE except: ego LiDAR is bumped from CARLA defaults to
+# AV-grade specs (32 channels, 600 k points/s, 10 Hz, 100 m range — Velodyne
+# VLP-32C-ish). The baseline scenario is kept untouched so prior results
+# remain reproducible against their original LiDAR config; this variant is
+# the substrate for the "new realistic baseline" with camera+LiDAR perception.
+#
+# Requires: Town05_Opt map
+# Road 11: 3-lane road (2 northbound + 1 southbound) near (-275, 15)
+# Unsignalized crosswalk at y~-15, with stop signs at (-272.19, -15.06) and
+# (-279.64, -15.16) flanking the crosswalk.
+# Ego drives northbound in left lane, parked vehicles + bus in right lane.
+# Pedestrian crosses eastbound from west sidewalk, occluded by the bus.
+
+scenario vru_ped_occluded_parked_bus_realistic:
+    ego: vehicle with:
+        keep(it.blueprint == "vehicle.lincoln.mkz")
+        keep(it.role_name == "hero")
+
+    ped: person with:
+        keep(it.blueprint == "walker.pedestrian.0020")
+        keep(it.is_invincible == false)
+
+    bus: vehicle with:
+        keep(it.blueprint == "vehicle.fuso.mitsubishi")
+        keep(it.fallback_blueprints == "vehicle.firetruck.actors,vehicle.sprinter.mercedes,vehicle.ambulance.ford,vehicle.mitsubishi.fusorosa,vehicle.carlamotors.firetruck,vehicle.mercedes.sprinter,vehicle.ford.ambulance,vehicle.carlamotors.european_hgv")
+
+    parked1: vehicle with:
+        keep(it.blueprint == "vehicle.audi.a2")
+
+    parked2: vehicle with:
+        keep(it.blueprint == "vehicle.tesla.model3")
+
+    parked3: vehicle with:
+        keep(it.blueprint == "vehicle.mini.cooper_s")
+
+    ego_camera: carla_rgb_camera with:
+        keep(it.width == 1280)
+        keep(it.height == 720)
+        keep(it.fov == 90)
+        keep(it.ros_name == "rgb")
+        keep(it.x == 0.3)
+        keep(it.y == 0.0)
+        keep(it.z == 2.0)
+        keep(it.pitch == -5.0)
+
+    # 3rd-person chase camera for the demo dashboard (matches CARLA's default
+    # spectator chase view: behind + above the ego, slight downward tilt).
+    ego_chase_camera: carla_rgb_camera with:
+        keep(it.width == 1280)
+        keep(it.height == 720)
+        keep(it.fov == 90)
+        keep(it.ros_name == "chase")
+        keep(it.x == -6.0)
+        keep(it.y == 0.0)
+        keep(it.z == 3.0)
+        keep(it.pitch == -15.0)
+
+    # AV-grade LiDAR (Velodyne VLP-32C-ish). The CARLA default LiDAR returns
+    # only a few hundred points per scan, which is too sparse for camera+LiDAR
+    # fusion at typical AEB ranges.
+    ego_lidar: carla_lidar with:
+        keep(it.ros_name == "lidar")
+        keep(it.z == 2.5)
+        keep(it.channels == 32)
+        keep(it.points_per_second == 600000)
+        keep(it.rotation_frequency == 10)
+        keep(it.range == 100)
+
+    sim_frequency: float = 60.0
+    map: string = "Town05_Opt"
+    traffic_lights: string = "none"
+    ego_control: string = "ros2"
+
+    background_vehicles: int = 0
+    background_pedestrians: int = 0
+
+    # Distance from ego to ped at which the ped starts walking.
+    # Default below; run_sweep / run_sweep_MC override it per cell.
+    d_trigger: length = 15m
+
+    # Time-fallback for the ped walk trigger. The ped starts walking on
+    # whichever of (ego within d_trigger) or (scenario time > t_fallback)
+    # fires first. Without this fallback, a V2X-equipped ego that detects
+    # the curb-waiting ped via the RSU brakes to a stop *before* reaching
+    # d_trigger — the distance condition then never fires, the ped never
+    # crosses, and the AEB sits at the stop until max_hold_s times out.
+    # Choose t_fallback large enough that the perception baseline always
+    # closes to d_trigger first (it does for every cell in the speed grid)
+    # so this fallback only activates in the V2X-stops-early case.
+    t_fallback: time = 10s
+
+    do serial:
+        setup: parallel:
+            ego.assign_position() with:
+                position(x: -272.5, y: -55.0, z: 0.5, project_to_road: true)
+            ped.assign_position() with:
+                position(x: -275.0, y: -12.0, z: 1.0)
+            bus.assign_position() with:
+                position(x: -276.0, y: -18.0, z: 0.5, project_to_road: true)
+            parked1.assign_position() with:
+                position(x: -276.0, y: -28.0, z: 0.5, project_to_road: true)
+            parked2.assign_position() with:
+                position(x: -276.0, y: -35.0, z: 0.5, project_to_road: true)
+            parked3.assign_position() with:
+                position(x: -276.0, y: -42.0, z: 0.5, project_to_road: true)
+
+        interaction: parallel:
+            bus.remain_stationary()
+            parked1.remain_stationary()
+            parked2.remain_stationary()
+            parked3.remain_stationary()
+
+            # Ped starts on (ego within d_trigger) OR (t_fallback elapsed),
+            # whichever first. Distance trigger wins for the perception
+            # baseline (ego closes fast); time trigger wins when a V2X
+            # ego stops short of d_trigger.
+            # Uses direction() instead of along() to keep physics enabled
+            # (realistic collision response: ped falls, vehicle doesn't rollover)
+            serial:
+                wait ego.object_distance(ped) <= d_trigger or ego.elapsed(t_fallback)
+                ped.walk() with:
+                    speed(1.4mps)
+                    direction(x: 1.0, y: 0.0)
+                    until_x(-265.0)

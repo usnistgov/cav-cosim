@@ -1,0 +1,45 @@
+# Default parameters for the camera_lidar_perception node.
+# Defaults match ego_camera + ego_lidar in vru_ped_occluded_parked_bus_realistic.osc.
+# A separate config file should be created for the RSU once added.
+
+camera_lidar_perception:
+  ros__parameters:
+    agent_actor_id: 0                       # filled in at launch time
+    camera_ros_name: "rgb"
+    lidar_ros_name: "lidar"
+    output_topic: "/perception/detections"
+    debug_image_topic: "/perception/image_debug"
+    publish_rate_hz: 10.0
+
+    yolo_model: "/home/hnh21/iotav/CARLA_0.10/models/yolov8n.pt"
+    yolo_conf_threshold: 0.4
+    yolo_imgsz: 640
+    yolo_device: "cuda:0"
+
+    image_width: 800
+    image_height: 600
+    camera_fov_deg: 90.0
+    camera_mount_x_m: 0.3                   # matches ego_camera x=0.3
+    camera_mount_y_m: 0.0
+    camera_mount_z_m: 2.0                   # matches ego_camera z=2.0
+    camera_pitch_deg: -5.0                  # matches ego_camera pitch=-5.0
+
+    lidar_mount_x_m: 0.0
+    lidar_mount_y_m: 0.0
+    lidar_mount_z_m: 2.5                    # matches ego_lidar z=2.5
+
+    use_lidar_fusion: True
+    use_ground_plane_fallback: True         # safety net when LiDAR has no points inside bbox
+    lidar_min_z_vehicle_m: 0.3              # skip ground returns
+    lidar_max_z_vehicle_m: 2.2              # skip overhead clutter
+    lidar_bbox_shrink_px: 4
+    lidar_cluster_min_points: 3             # min points to call something a real cluster
+    lidar_cluster_tolerance_m: 0.5          # depth-band width when grouping points
+
+    max_detection_range_m: 80.0
+
+    # Tracking (Step 2 — see node docstring for output-message hijack details)
+    track_gate_m: 1.5                       # max det→track association distance
+    track_max_age_s: 0.3                    # drop tracks not seen this long
+    track_velocity_alpha: 0.5               # EMA smoothing factor (0=no update, 1=instant)
+    track_min_confirmed_frames: 2           # publish only after this many frames

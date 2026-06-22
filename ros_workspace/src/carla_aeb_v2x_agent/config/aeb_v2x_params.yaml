@@ -1,0 +1,14 @@
+aeb_node:
+  ros__parameters:
+    # Throttle when path is clear (0.0 to 1.0)
+    cruise_throttle: 0.5
+
+    # Distance (m) for full emergency brake
+    brake_distance: 5.0
+
+    # Distance (m) to start proportional slowdown
+    warning_distance: 12.0
+
+    # Max lateral offset (m) to consider ped on collision course
+    # Ego lane width ~3.5m, ped crossing from adjacent lane
+    lateral_threshold: 3.0

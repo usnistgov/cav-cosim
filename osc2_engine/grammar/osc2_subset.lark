@@ -1,0 +1,166 @@
+// OpenSCENARIO 2.0 Grammar for CARLA VRU Scenarios
+// ASAM-compliant subset with support for: actor, extend, struct, modifier,
+// scenario, keep() constraints, do serial/parallel, actions with modifiers,
+// wait triggers, phase labels, and physical units.
+
+start: (_NL | top_level_decl)*
+
+?top_level_decl: import_stmt
+               | actor_decl
+               | extend_decl
+               | modifier_decl
+               | struct_decl
+               | scenario_decl
+
+// --- Import ---
+import_stmt: "import" dotted_name _NL
+
+// --- Actor declaration (legacy: actor X inherits Y) ---
+actor_decl: "actor" NAME "inherits" NAME ":" _NL _INDENT member+ _DEDENT
+
+// --- Extend declaration (OSC2 standard: extend vehicle: ...) ---
+extend_decl: "extend" NAME ":" _NL _INDENT member+ _DEDENT
+
+// --- Modifier declaration (extension modifiers: modifier carla_behavior: ...) ---
+modifier_decl: "modifier" NAME ":" _NL _INDENT member+ _DEDENT
+
+// --- Struct declaration ---
+struct_decl: "struct" NAME ":" _NL _INDENT member+ _DEDENT
+
+// --- Members (shared by actor, extend, modifier, struct) ---
+member: NAME ":" type_ref "=" literal _NL
+      | NAME ":" type_ref _NL
+
+type_ref: NAME
+
+// --- Scenario declaration ---
+scenario_decl: "scenario" NAME ":" _NL _INDENT scenario_body _DEDENT
+
+scenario_body: (_NL | scenario_member)+
+
+?scenario_member: constrained_instance
+                | actor_instance
+                | param_decl
+                | do_block
+
+// Actor/struct instantiation with keep() constraints:
+//   ego: vehicle with:
+//       keep(it.blueprint == "...")
+constrained_instance: NAME ":" NAME with_constraint_block
+
+// Simple instantiation (no constraints): ego: ego_car
+actor_instance: NAME ":" NAME _NL
+
+// Parameter: ped_trigger_distance: length = 35m
+param_decl: NAME ":" type_ref "=" literal _NL
+
+// --- Keep constraint block ---
+with_constraint_block: "with" ":" _NL _INDENT keep_constraint+ _DEDENT
+
+keep_constraint: "keep" "(" keep_expr ")" _NL
+
+keep_expr: "it" "." NAME COMP_OP expression
+
+// --- Do block ---
+do_block: "do" composition ":" _NL _INDENT (_NL | phase)+ _DEDENT
+
+?composition: "serial"   -> comp_serial
+            | "parallel" -> comp_parallel
+            | "one_of"   -> comp_one_of
+
+// --- Phases (with optional labels) ---
+?phase: labeled_phase
+      | composition_block
+      | action_stmt
+      | wait_stmt
+
+// Labeled phase: setup: parallel: ...
+labeled_phase: NAME ":" composition_block
+             | NAME ":" action_stmt
+             | NAME ":" wait_stmt
+
+composition_block: composition ":" _NL _INDENT (_NL | phase)+ _DEDENT
+
+// Action: actor.action(args) with optional with: block
+action_stmt: dotted_name "(" arg_list? ")" with_block
+           | dotted_name "(" arg_list? ")" _NL
+
+// Wait: wait <expression>
+wait_stmt: "wait" expression _NL
+
+// --- With block (action modifiers) ---
+with_block: "with" ":" _NL _INDENT modifier+ _DEDENT
+
+modifier: NAME "(" arg_list? ")" _NL
+
+// --- Argument lists ---
+arg_list: arg ("," arg)*
+
+?arg: named_arg | positional_arg
+
+named_arg: NAME ":" expression
+positional_arg: expression
+
+// --- Expressions (for triggers and values) ---
+?expression: or_expr
+
+?or_expr: and_expr ("or" and_expr)*     -> or_expr
+
+?and_expr: comparison ("and" comparison)* -> and_expr
+
+?comparison: arith_expr
+           | arith_expr COMP_OP arith_expr -> comparison
+
+COMP_OP: "<=" | ">=" | "==" | "!=" | "<" | ">"
+
+?arith_expr: term
+           | arith_expr "+" term  -> add
+           | arith_expr "-" term  -> sub
+
+?term: factor
+     | term "*" factor  -> mul
+     | term "/" factor  -> div
+
+?factor: atom
+
+// Physical literal: number+unit as single token (avoids unit/NAME ambiguity)
+?atom: PHYSICAL_LITERAL  -> physical_literal
+     | SIGNED_NUMBER     -> number_literal
+     | ESCAPED_STRING    -> string_literal
+     | "true"            -> true_literal
+     | "false"           -> false_literal
+     | dotted_name "(" arg_list? ")" -> func_call
+     | dotted_name       -> name_ref
+     | "(" expression ")"
+
+// Longer units first to ensure correct matching (mps before m, deg before d, etc.)
+PHYSICAL_LITERAL.2: /\-?\d+(\.\d+)?(mps|kph|kmh|deg|km|ms|m|s)\b/
+
+// --- Literals (for member defaults / param defaults) ---
+?literal: PHYSICAL_LITERAL  -> physical_literal
+        | SIGNED_NUMBER     -> number_literal
+        | ESCAPED_STRING    -> string_literal
+        | "true"            -> true_literal
+        | "false"           -> false_literal
+
+// --- Dotted name (e.g., ego.drive, osc.standard, lib.carla) ---
+dotted_name: NAME ("." NAME)*
+
+// --- Terminals ---
+%import common.CNAME -> NAME
+%import common.NUMBER
+%import common.SIGNED_NUMBER
+%import common.ESCAPED_STRING
+%import common.WS_INLINE
+
+// Newline handling for indentation
+_NL: ( NEWLINE )+
+
+NEWLINE: /\n[\t ]*/
+
+// Ignore inline whitespace and line comments
+%ignore WS_INLINE
+%ignore /\#[^\n]*/
+
+// Indentation tokens (generated by postlex Indenter)
+%declare _INDENT _DEDENT
