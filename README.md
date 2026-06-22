@@ -263,3 +263,9 @@ No open-source OSC2 execution engine exists for CARLA 0.9.16 and up, so this rep
 ### CARLA version targeting
 
 The repo targets **CARLA 0.10.0** (UE5) but also runs against **CARLA 0.9.16** (UE4) for hardware-constrained setups — select with `--carla-version 0.9.16` on every runner. The two versions differ mainly in engine and VRAM footprint (UE5 ≈ 16 GB, UE4 ≈ 8 GB); both expose native ROS 2 the same way, so the AEB stack is unchanged across versions. The sweeps currently published in this repo were run on 0.9.16.
+
+## Contact
+
+- **Name:** Hadhoum Hajjaj
+- **Division and Group Names:** Communication Technology Laboratory /IoT Devices and Infrastructures Group
+- **Email:** [hadhoum.hajjaj@nist.gov](mailto:hadhoum.hajjaj@nist.gov)
