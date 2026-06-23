@@ -440,8 +440,8 @@ class AEBYoloNode(Node):
                 ctrl.brake = 0.0
                 if not self._metrics_only:
                     self._ctrl_pub.publish(ctrl)
-                self._throttle_pub.publish(Float64(data=float(ctrl.throttle)))
-                self._brake_pub.publish(Float64(data=float(ctrl.brake)))
+                    self._throttle_pub.publish(Float64(data=float(ctrl.throttle)))
+                    self._brake_pub.publish(Float64(data=float(ctrl.brake)))
                 self._target_speed_pub.publish(Float64(data=self._target_speed * 3.6))
                 # Override state to NEAR_MISS for the dashboard
                 self._state_pub.publish(String(data="NEAR_MISS"))
@@ -531,8 +531,8 @@ class AEBYoloNode(Node):
 
         if not self._metrics_only:
             self._ctrl_pub.publish(ctrl)
-        self._throttle_pub.publish(Float64(data=float(ctrl.throttle)))
-        self._brake_pub.publish(Float64(data=float(ctrl.brake)))
+            self._throttle_pub.publish(Float64(data=float(ctrl.throttle)))
+            self._brake_pub.publish(Float64(data=float(ctrl.brake)))
         self._target_speed_pub.publish(Float64(data=self._target_speed * 3.6))
         self._publish_metrics(ttc)
 

@@ -223,6 +223,8 @@ class AEBNodeV2X(Node):
             CarlaEgoVehicleControl, control_topic, 10)
         self._link_state_pub = self.create_publisher(
             String, "/metrics/v2x_link_state", 10)
+        self._throttle_pub = self.create_publisher(Float64, "/metrics/throttle", 10)
+        self._brake_pub = self.create_publisher(Float64, "/metrics/brake", 10)
 
         self._timer = self.create_timer(0.05, self._control_loop)
 
@@ -236,6 +238,11 @@ class AEBNodeV2X(Node):
 
     def _on_speed(self, msg: Float64):
         self._ego_speed = msg.data
+
+    def _publish_ctrl(self, ctrl):
+        self._ctrl_pub.publish(ctrl)
+        self._throttle_pub.publish(Float64(data=float(ctrl.throttle)))
+        self._brake_pub.publish(Float64(data=float(ctrl.brake)))
 
     def _on_ego_odom(self, msg: Odometry):
         if not self._ego_pose_received:
@@ -620,7 +627,7 @@ class AEBNodeV2X(Node):
                 self.get_logger().error(
                     f"AEB BRAKE [v2x] — TTC={ttc_v2x:.2f}s, dist={d_v2x:.1f}m, "
                     f"CAM age={age_v2x*1000:.0f}ms, ~{self._ego_speed*3.6:.0f} km/h")
-                self._ctrl_pub.publish(ctrl)
+                self._publish_ctrl(ctrl)
                 return
 
             # LiDAR path
@@ -643,7 +650,7 @@ class AEBNodeV2X(Node):
                     self.get_logger().error(
                         f"AEB BRAKE [lidar] — TTC={ttc_lidar:.2f}s, dist={d_lidar:.1f}m, "
                         f"~{self._ego_speed*3.6:.0f} km/h")
-                    self._ctrl_pub.publish(ctrl)
+                    self._publish_ctrl(ctrl)
                     return
 
             # No threat: cruise
@@ -653,7 +660,7 @@ class AEBNodeV2X(Node):
             ctrl.throttle = self._speed_control()
             ctrl.brake = 0.0
 
-        self._ctrl_pub.publish(ctrl)
+        self._publish_ctrl(ctrl)
 
 
 def main(args=None):
